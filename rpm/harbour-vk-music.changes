@@ -1,0 +1,29 @@
+# Rename this file as harbour-vk-music.changes to include changelog
+# entries in your RPM file.
+#
+# Add new changelog entries following the format below.
+# Add newest entries to the top of the list.
+# Separate entries from eachother with a blank line.
+
+# * date Author's Name <author's email> version-release
+# - Summary of changes
+
+* Wed Oct 08 2015 Alex <fake.ae@gmail.com> 0.4-1
+- internal changes and small tweaks
+- harbour release version
+
+* Wed Oct 08 2015 Alex <fake.ae@gmail.com> 0.3-1
+- managing network and connection errors
+- search feature
+- add/remove feature
+- refresh list feature
+- changed icon
+- clear garbage in cache dir on start
+
+* Tue Oct 07 2015 Alex <fake.ae@gmail.com> 0.2-1
+- workaround for annoying DockPanel hide animation glitch
+
+* Mon Oct 06 2015 Alex <fake.ae@gmail.com> 0.1-1
+- initial release
+
+
