@@ -124,9 +124,6 @@ Page {
                 loadingIndicator.running = false;
             }
 
-            onCountChanged: {
-                console.log("woooooooooooooooooow wtf?    " + count + "  " + listModel)
-            }
         }
     }
 
@@ -139,17 +136,11 @@ Page {
 
     onStatusChanged: {
         console.log("onStatusChanged = " + page.status);
-        console.log("listModel.count = " + listModel.count);
 
-        controlsPanel.hidePanel();
+        if (page.status === PageStatus.Active) {
+            controlsPanel.hidePanel();
+        }
 
-//        if (page.status === PageStatus.Active){//set current albumId
-//            if (listModel.count === 0){
-//                reloadAlbumList();
-//            } else {
-//                setCurrentItemIndex();
-//            }
-//        }
     }
 
     function setCurrentItemIndex(){

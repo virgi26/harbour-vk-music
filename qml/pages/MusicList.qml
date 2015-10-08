@@ -648,6 +648,7 @@ Page {
         controlsPanel.albumTitle = albumTitle;
         controlsPanel.albumId = albumId;
         clearSearchField();
+        hideSearch.start();
         applySearchFilter();
     }
 }
