@@ -43,6 +43,8 @@ DockedPanel {
     }
     property bool userInteraction: false
     property bool partiallyHidden: true
+    property string albumTitle
+    property int albumId: -1//default value for My music
 
     property alias audioPlayer: audioPlayer
     property alias nextButton: nextButton
@@ -338,6 +340,10 @@ DockedPanel {
                 show();
             }
         }
+    }
+
+    onAlbumIdChanged: {
+        console.log("onAlbumIdChanged: " + albumId + " - " + albumTitle);
     }
 
     function getAudioStatus(status){

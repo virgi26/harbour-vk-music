@@ -52,19 +52,24 @@ function createAPIRequestWithTimeout(query, callBackFunction, parent){
     request.send();
 }
 
-function getAudioList(parent, accessToken, userId, parseAPIResponse_getList, offset, pageSize, searchFilter) {
+function getAudioList(parent, accessToken, userId, parseAPIResponse_getList, offset, pageSize, searchFilter, albumId) {
     console.log("getAudioList started");
     console.log("searchFilter = " + searchFilter);
 
     var query;
+
+    //default values
+    pageSize = (typeof pageSize !== 'undefined' ? pageSize : DEFAULT_PAGE_SIZE);
+    offset = (typeof offset !== 'undefined' ? offset : 0);
+    albumId = (typeof albumId !== 'undefined' ? albumId : -1);
 
     if (searchFilter){
         query = API_SERVER_URL
             + "/audio.search?"
             + "v=" + API_VERSION
             + "&access_token=" + accessToken
-            + "&count=" + (pageSize ? pageSize : DEFAULT_PAGE_SIZE)
-            + "&offset=" + (offset ? offset : 0)
+            + "&count=" + pageSize
+            + "&offset=" + offset
             + "&q=" + searchFilter
             + "&auto_complete=0"
             + "&sort=2"
@@ -75,8 +80,9 @@ function getAudioList(parent, accessToken, userId, parseAPIResponse_getList, off
             + "/audio.get?"
             + "v=" + API_VERSION
             + "&access_token=" + accessToken
-            + "&count=" + (pageSize ? pageSize : DEFAULT_PAGE_SIZE)
-            + "&offset=" + (offset ? offset : 0)
+            + "&count=" + pageSize
+            + "&offset=" + offset
+            + "&album_id=" + albumId
         ;
     }
 
@@ -119,4 +125,24 @@ function removeAudio(parent, accessToken, aid, owner_id, parseAPIResponse_remove
     console.log("query = " + query);
 
     createAPIRequestWithTimeout(query, parseAPIResponse_remove, parent);
+}
+
+function getAlbums(parent, accessToken, owner_id, parseAPIResponse_getAlbums, offset, pageSize){
+    console.log("getAlbums started");
+
+    pageSize = (typeof pageSize !== 'undefined' ? pageSize : DEFAULT_PAGE_SIZE);
+    offset = (typeof offset !== 'undefined' ? offset : 0);
+
+    var query = API_SERVER_URL
+        + "/audio.getAlbums?"
+        + "v=" + API_VERSION
+        + "&access_token=" + accessToken
+        + "&owner_id=" + owner_id
+        + "&count=" + pageSize
+        + "&offset=" + offset
+    ;
+
+    console.log("query = " + query);
+
+    createAPIRequestWithTimeout(query, parseAPIResponse_getAlbums, parent);
 }

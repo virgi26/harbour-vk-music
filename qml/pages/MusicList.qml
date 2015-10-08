@@ -36,6 +36,8 @@ Page {
     property int errorCode
     property bool searchShown: false
     property bool listChanged: false
+    property int selectedAlbumId: -1//no album
+    property bool endOfAudioList: false
 
     property alias listView: listView
     property alias listModel: listModel
@@ -45,7 +47,6 @@ Page {
         id: flickable
 
         anchors.fill: parent
-//        anchors.bottomMargin: controlsPanel.visibleSize
 
         Rectangle {//helper for searchField resize animation
             id: magicalDivider
@@ -106,16 +107,53 @@ Page {
 
         PageHeader {
             id: header
-            title: qsTr("My music")
+            title: controlsPanel.albumId === -1 ? qsTr("My music") : controlsPanel.albumTitle
 
             anchors.top: parent.top
             anchors.left: magicalDivider.right
 
             width: (parent.width - magicalDivider.width)
+
+            NumberAnimation on scale {
+                id: scaleUp
+                from: 1
+                to: 1.1
+                duration: 200
+                running: headerMouseArea.pressed && headerMouseArea.containsMouse
+
+                onStopped: {
+                    scaleDown.start()
+                }
+            }
+
+            NumberAnimation on scale {
+                id: scaleDown
+                from: 1.1
+                to: 1
+                duration: 200
+                running: false
+            }
+
+            MouseArea {
+                id: headerMouseArea
+                anchors.fill: parent
+
+//                onClicked: {
+//                    var dialog = pageStack.push(
+//                                Qt.resolvedUrl("AlbumsDialog.qml")
+//                                )
+//                    dialog.accepted.connect(function() {
+//                        selectedAlbumId = dialog.albumId;
+//                        console.log("selectedAlbum = " + selectedAlbumId);
+//                    })
+//                }
+            }
         }
 
         IconButton {
             id: searchIcon
+
+            visible: controlsPanel.albumId === -1//API does not support filters inside of albums
 
             anchors {
                 left: parent.left
@@ -237,18 +275,19 @@ Page {
                 onMovementStarted: {
                     listView.forceActiveFocus();//hide keyboard
                     controlsPanel.partiallyHide();
+                    waitForPageStack.start();
                 }
 
             }
         }
 
-        PullDownMenu {
+        PullDownMenu {//TODO remorse timer
             MenuItem {
                 text: qsTr("Logout")
                 onClicked: {
                     loadingIndicator.running = true;
                     controlsPanel.hidePanel();
-                    clearListModel();
+                    clearAudioListModel();
                     Utils.clearCookies();
                     Database.setProperty("accessToken", "");
                     Database.setProperty("userId", "");
@@ -461,6 +500,30 @@ Page {
 
     }
 
+    Timer {
+        id: waitForPageStack
+        interval: 1000
+        running: false
+        repeat: false
+
+        onTriggered: {
+            console.log("creating albums page")
+            var albumsPage = pageStack.pushAttached(
+                        Qt.resolvedUrl("AlbumsPage.qml")
+                        , {applyAlbumFilter: applyAlbumFilter}
+                        );
+            if (albumsPage.listModel.count === 0){//update album list beforehand for smooth animation
+                albumsPage.reloadAlbumList();
+            } else {
+                albumsPage.setCurrentItemIndex();
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        waitForPageStack.start();
+    }
+
     function parseAPIResponse_getList(responseText){
         if (!responseText){
             console.log("Network access error");
@@ -509,6 +572,11 @@ Page {
 
             listModel.append(song);
         }
+        if (items.length < _DEFAULT_PAGE_SIZE){
+            console.log("reached end of the list");
+            endOfAudioList = true;
+            loadingIndicator.running = false;
+        }
     }
 
     function clearCacheIcons(){//should be called after clearing cache
@@ -526,14 +594,19 @@ Page {
         }
 
         loadingIndicator.running = true;
-        clearListModel();
-        VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, 0, _DEFAULT_PAGE_SIZE);
+        clearAudioListModel();
+        VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, 0, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text), controlsPanel.albumId);
     }
 
     function requestMoreSongs(){
         console.log("requestMoreSongs");
+
+        if (endOfAudioList){
+            return;
+        }
+
         loadingIndicator.running = true;
-        VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, listModel.count, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text));
+        VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, listModel.count, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text), controlsPanel.albumId);
     }
 
     function handleError(code, message){
@@ -553,17 +626,29 @@ Page {
     function applySearchFilter(){
         console.log("applySearchFilter");
         loadingIndicator.running = true;
-        clearListModel();
+        clearAudioListModel();
         listChanged = true;
         AudioPlayerInfo.currentIndex = -1;
-        VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, listModel.count, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text));
+        VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, listModel.count, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text), controlsPanel.albumId);
     }
 
-    function clearListModel(){
+    function clearAudioListModel(){
         console.log("clearListModel");
+        endOfAudioList = false;
         listView.displaced = null;
         listModel.clear();
         listView.displaced = listViewDisplacedAnimation;
+    }
+
+    function clearSearchField(){
+        searchField.text = "";
+    }
+
+    function applyAlbumFilter(albumId, albumTitle){
+        controlsPanel.albumTitle = albumTitle;
+        controlsPanel.albumId = albumId;
+        clearSearchField();
+        applySearchFilter();
     }
 }
 

@@ -34,7 +34,9 @@ OTHER_FILES += qml/harbour-vk-music.qml \
     qml/pages/ControlsPanel.qml \
     qml/utils/misc.js \
     qml/images/logo.png \
-    rpm/harbour-vk-music.changes
+    rpm/harbour-vk-music.changes \
+    README.md \
+    qml/pages/AlbumsPage.qml
 
 # to disable building translations every time, comment out the
 # following CONFIG line

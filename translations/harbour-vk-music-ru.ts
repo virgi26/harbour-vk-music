@@ -2,6 +2,17 @@
 <!DOCTYPE TS>
 <TS version="2.1">
 <context>
+    <name>AlbumsPage</name>
+    <message>
+        <source>Albums</source>
+        <translation>Альбомы</translation>
+    </message>
+    <message>
+        <source>Refresh</source>
+        <translation>Обновить</translation>
+    </message>
+</context>
+<context>
     <name>CoverPage</name>
     <message>
         <source>Music</source>
@@ -18,12 +29,20 @@
 <context>
     <name>MusicList</name>
     <message>
-        <source>Settings</source>
-        <translation>Настройки</translation>
+        <source>My music</source>
+        <translation>Моя музыка</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Поиск</translation>
     </message>
     <message>
         <source>Logout</source>
         <translation>Выйти</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Настройки</translation>
     </message>
     <message>
         <source>Login</source>
@@ -36,14 +55,6 @@
     <message>
         <source>Error occured</source>
         <translation>Возникла ошибка</translation>
-    </message>
-    <message>
-        <source>Search</source>
-        <translation>Поиск</translation>
-    </message>
-    <message>
-        <source>My music</source>
-        <translation>Моя музыка</translation>
     </message>
 </context>
 <context>

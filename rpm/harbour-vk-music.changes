@@ -8,6 +8,9 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Wed Oct 08 2015 Alex <fake.ae@gmail.com> 0.5-1
+- play audio from albums
+
 * Wed Oct 08 2015 Alex <fake.ae@gmail.com> 0.4-1
 - internal changes and small tweaks
 - harbour release version
