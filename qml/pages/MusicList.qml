@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Petr Vytovtov
+  Copyright (C) 2015 Alexander Ladygin
   Contact: Alexander Ladygin <fake.ae@gmail.com>
   All rights reserved.
 
@@ -19,6 +19,7 @@
   along with Harbour-vk-music.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import org.nemomobile.notifications 1.0
@@ -36,7 +37,6 @@ Page {
     property int errorCode
     property bool searchShown: false
     property bool listChanged: false
-    property int selectedAlbumId: -1//no album
     property bool endOfAudioList: false
 
     property alias listView: listView
@@ -44,7 +44,7 @@ Page {
 
 
     SilicaFlickable {
-        id: flickable
+        id: flickable//do not change, binded to name in Notification component
 
         anchors.fill: parent
 
@@ -61,7 +61,7 @@ Page {
             NumberAnimation on width {
                 id: showSearch
 
-                to: flickable.width - clearSearchIcon.width - Theme.horizontalPageMargin
+                to: flickable.width - clearSearchIcon.width - Theme.horizontalPageMargin - Theme.paddingLarge//not to overlap with page animation
                 duration: 300
                 running: false
 
@@ -114,46 +114,20 @@ Page {
 
             width: (parent.width - magicalDivider.width)
 
-            NumberAnimation on scale {
-                id: scaleUp
-                from: 1
-                to: 1.1
-                duration: 200
-                running: headerMouseArea.pressed && headerMouseArea.containsMouse
-
-                onStopped: {
-                    scaleDown.start()
-                }
-            }
-
-            NumberAnimation on scale {
-                id: scaleDown
-                from: 1.1
-                to: 1
-                duration: 200
-                running: false
-            }
-
             MouseArea {
                 id: headerMouseArea
                 anchors.fill: parent
 
-//                onClicked: {
-//                    var dialog = pageStack.push(
-//                                Qt.resolvedUrl("AlbumsDialog.qml")
-//                                )
-//                    dialog.accepted.connect(function() {
-//                        selectedAlbumId = dialog.albumId;
-//                        console.log("selectedAlbum = " + selectedAlbumId);
-//                    })
-//                }
+                onClicked: {
+                    pageStack.navigateForward(PageStackAction.Animated);
+                }
             }
         }
 
         IconButton {
             id: searchIcon
 
-            visible: controlsPanel.albumId === -1//API does not support filters inside of albums
+            visible: accessToken && controlsPanel.albumId === -1//API does not support filters inside of albums
 
             anchors {
                 left: parent.left
@@ -230,17 +204,17 @@ Page {
 
         }
 
-        Rectangle {
+        Item {
             id: spacer
             height: Theme.paddingLarge
             anchors.top: header.bottom
         }
 
-        Rectangle {
+        Item {
             anchors.top: spacer.bottom
             height: parent.height - header.height - 3*Theme.paddingMedium
             width: parent.width
-            color: "transparent"
+//            color: "transparent"
 
             SilicaListView {
                 id: listView
@@ -275,7 +249,6 @@ Page {
                 onMovementStarted: {
                     listView.forceActiveFocus();//hide keyboard
                     controlsPanel.partiallyHide();
-                    waitForPageStack.start();
                 }
 
             }
@@ -283,12 +256,25 @@ Page {
 
         PullDownMenu {//TODO remorse timer
             MenuItem {
+                text: qsTr("About")
+                onClicked: {
+                    controlsPanel.hidePanel();
+                    pageStack.push(Qt.resolvedUrl("About.qml"));
+                }
+            }
+            MenuItem {
                 text: qsTr("Logout")
                 onClicked: {
                     loadingIndicator.running = true;
                     controlsPanel.hidePanel();
                     clearAudioListModel();
+                    controlsPanel.stop();
+                    searchField.text = "";
+                    controlsPanel.albumId = -1;
+                    pageStack.popAttached();
                     Utils.clearCookies();
+                    Utils.clearCacheDir(cacheDir);
+                    Database.clearLastAccessedDateTable();
                     Database.setProperty("accessToken", "");
                     Database.setProperty("userId", "");
                     accessToken = "";
@@ -307,7 +293,7 @@ Page {
             MenuItem {
                 text: qsTr("Login")
                 onClicked: {
-                    pageStack.push(Qt.resolvedUrl("LoginPage.qml"));
+                    pageStack.push(Qt.resolvedUrl("LoginPage.qml"), {parentPage: musicList});
                 }
                 visible: !accessToken
             }
@@ -361,9 +347,19 @@ Page {
 
     Connections {
         target: applicationWindow
+
         onAccessTokenChanged: {//reload list
             console.log("onAccessTokenChanged: " + accessToken);
             if (accessToken){
+                reloadList();
+                waitForPageStack.start();
+            }
+        }
+
+        onCacheDirChanged: {
+            //reload list
+            console.log("onCacheDirChanged: " + cacheDir);
+            if (cacheDir){
                 reloadList();
             }
         }
@@ -390,6 +386,16 @@ Page {
             console.log("AudioPlayerInfo:onFileCached");
             listModel.setProperty(itemIndex, "cached", true);
         }
+
+        onFileDeleted: {
+            console.log("AudioPlayerInfo:onFileCached");
+            for (var i = 0; i < listModel.count; i++){//remove cached icon
+                if (fileName === Misc.getFileName(listModel.get(i))){
+                    listModel.setProperty(i, "cached", false);
+                    break;
+                }
+            }
+        }
     }
 
     Notification {
@@ -404,101 +410,10 @@ Page {
     }
 
     Loader {
-        id:notificationLoader
+        id:notificationLoader//do not change, binded to name in Notification component
     }
 
-    Component {
-        id: notification
 
-        MouseArea {
-            id: mouseAreaFull
-
-            width: Screen.width
-            height: Screen.height
-            x: 0
-            y: 0
-
-            onPressed: {
-                notificationLoader.active = false;
-                flickable.enabled = true;
-                flickable.visible = true;
-            }
-
-            Rectangle {
-                id: rectangle
-
-                width: Screen.width - 2*Theme.paddingLarge
-                height: column.height + Theme.paddingLarge
-                x: Theme.paddingLarge
-                y: Theme.paddingLarge
-
-                color: mouseArea.pressed && mouseArea.containsMouse
-                               ? Theme.rgba(Theme.highlightBackgroundColor, Theme.highlightBackgroundOpacity)
-                               : "transparent"
-                border.color: Theme.highlightColor
-                border.width: 2
-                radius: 10
-
-                SequentialAnimation on border.color {
-                        ColorAnimation { to: "red"; duration: 200 }
-                        ColorAnimation { to: Theme.highlightColor; duration: 200 }
-                        ColorAnimation { to: "red"; duration: 200 }
-                        ColorAnimation { to: Theme.highlightColor; duration: 200 }
-                        ColorAnimation { to: "red"; duration: 200 }
-                        ColorAnimation { to: Theme.highlightColor; duration: 200 }
-                        ColorAnimation { to: "red"; duration: 200 }
-                        ColorAnimation { to: Theme.highlightColor; duration: 200 }
-                        ColorAnimation { to: "red"; duration: 200 }
-                        ColorAnimation { to: Theme.highlightColor; duration: 200 }
-                }
-
-                MouseArea {
-                    id: mouseArea
-                    anchors.fill: parent
-
-                    onPressed: {
-                        notificationLoader.active = false;
-                        flickable.enabled = true;
-                        flickable.visible = true;
-
-                        switch (errorCode){
-                            case 5://invalid session, redirect to login page
-                                pageStack.push(Qt.resolvedUrl("LoginPage.qml"));
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                }
-
-
-                Column {
-                    id: column
-
-                    spacing:Theme.paddingSmall
-                    x: Theme.paddingLarge
-                    y: Theme.paddingSmall
-
-
-                    Label {
-                        text: qsTr("Error occured")
-                        font.pixelSize: Theme.fontSizeSmall
-                        color:Theme.highlightColor
-                    }
-
-                    Label {
-                        font.pixelSize: Theme.fontSizeSmall
-                        color:Theme.secondaryHighlightColor
-                        text: errorMessage
-                        width: rectangle.width - 2 * Theme.paddingLarge
-                        wrapMode: Text.WordWrap
-                    }
-                }
-
-            }
-        }
-
-    }
 
     Timer {
         id: waitForPageStack
@@ -521,7 +436,9 @@ Page {
     }
 
     Component.onCompleted: {
-        waitForPageStack.start();
+        if (accessToken){
+            waitForPageStack.start();
+        }
     }
 
     function parseAPIResponse_getList(responseText){
@@ -567,7 +484,7 @@ Page {
                 , genre_id: items[i].genre_id
             };
             //check for cached file
-            var filePath = Utils.getFilePath("", Misc.getFileName(song));
+            var filePath = Utils.getFilePath(cacheDir, Misc.getFileName(song));
             song.cached = filePath ? true : false;
 
             listModel.append(song);
@@ -620,7 +537,7 @@ Page {
         flickable.enabled = false;
         flickable.visible = false;
         notificationLoader.active = true;
-        notificationLoader.sourceComponent = notification;
+        notificationLoader.source = "Notification.qml";
     }
 
     function applySearchFilter(){

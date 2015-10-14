@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Petr Vytovtov
+  Copyright (C) 2015 Alexander Ladygin
   Contact: Alexander Ladygin <fake.ae@gmail.com>
   All rights reserved.
 
@@ -18,11 +18,15 @@
   You should have received a copy of the GNU General Public License
   along with Harbour-vk-music.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import "../utils/database.js" as Database
 
 Page {
+    id: loginPage
+    property var parentPage
+
     readonly property string defaultURL: "https://oauth.vk.com/authorize?" +
                                 "client_id=5089725" +
                                 "&scope=audio,offline" +
@@ -61,16 +65,16 @@ Page {
                 } else {
                     console.log("access token is present in URL: " + url);
 
-                    var startIndex = urlStr.indexOf(ACCESS_TOKEN) + ACCESS_TOKEN.length + 1;
-                    accessToken = urlStr.substring(startIndex, urlStr.indexOf("&", startIndex) === -1 ? urlStr.length : urlStr.indexOf("&", startIndex));
-                    Database.setProperty("accessToken", accessToken);
-                    console.log("accessToken = " + accessToken);
-                    startIndex = urlStr.indexOf(USER_ID) + USER_ID.length + 1;
+                    var startIndex = urlStr.indexOf(USER_ID) + USER_ID.length + 1;
                     userId = urlStr.substring(startIndex, urlStr.indexOf("&", startIndex) === -1 ? urlStr.length : urlStr.indexOf("&", startIndex));
                     Database.setProperty("userId", userId);
                     console.log("userId = " + userId);
+                    startIndex = urlStr.indexOf(ACCESS_TOKEN) + ACCESS_TOKEN.length + 1;
+                    accessToken = urlStr.substring(startIndex, urlStr.indexOf("&", startIndex) === -1 ? urlStr.length : urlStr.indexOf("&", startIndex));
+                    Database.setProperty("accessToken", accessToken);
+                    console.log("accessToken = " + accessToken);
 
-                    pageStack.pop();
+                    pageStack.pop(parentPage, PageStackAction.Immediate);
                     loginView.destroy();
                 }
 

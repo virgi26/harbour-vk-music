@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Petr Vytovtov
+  Copyright (C) 2015 Alexander Ladygin
   Contact: Alexander Ladygin <fake.ae@gmail.com>
   All rights reserved.
 
@@ -31,6 +31,12 @@ ApplicationWindow
 
     property string accessToken
     property int userId
+    property string cacheDir
+    property int freeSpaceKBytes
+    property int minimumFreeSpaceKBytes: 1024 * 1024
+    property string sdcardPath: Utils.sdcardPath()
+    property bool humanFriendlyFileNames: false
+
     readonly property int _DEFAULT_PAGE_SIZE: (Screen.sizeCategory >= Screen.Large) ? 60 : 30
 
     property alias controlsPanel: controlsPanel
@@ -38,7 +44,7 @@ ApplicationWindow
     bottomMargin: controlsPanel.visibleSize
 
     initialPage: Component {
-        MusicList {}
+        MusicList {id: musicList}
     }
 
     cover: Qt.resolvedUrl("cover/CoverPage.qml")
@@ -46,25 +52,65 @@ ApplicationWindow
     _defaultPageOrientations: Orientation.Portrait
 
     Component.onCompleted: {
-        validateToken();
+        userId = Database.getProperty("userId");
+        accessToken = Database.getProperty("accessToken");
+    }
+
+    Component.onDestruction: {
+        console.log("onDestruction");
+        Utils.clearCacheDirFromGarbage(cacheDir, userId);
+        console.log("onDestruction complete");
     }
 
     ControlsPanel {
         id: controlsPanel
     }
 
-    function validateToken(){
-        userId = Database.getProperty("userId");
-        accessToken = Database.getProperty("accessToken");
+    Connections {
+        target: Utils
 
+        onFreeSpaceUpdated: {
+            console.log("onFreeSpaceUpdated: " + freeSpace);
+            if (freeSpace === -1){
+                console.log("Error getting free space for " + cacheDir);
+                cacheDir = "";
+            } else {
+                freeSpaceKBytes = freeSpace;
+            }
+        }
+    }
+
+    onCacheDirChanged: {
+        Database.setProperty("cacheDir", cacheDir);
+        Utils.getFreeSpace(cacheDir);
+    }
+
+    onAccessTokenChanged: {
+        validateToken();
+    }
+
+    function validateToken(){
         if (!accessToken || !userId){
             console.log("access_token or user_id is undefined");
-            pageStack.push(Qt.resolvedUrl("pages/LoginPage.qml"));
+//            pageStack.push(Qt.resolvedUrl("pages/LoginPage.qml"));
         } else {
-            Utils.clearCacheDirFromGarbage("", userId);
+            setCacheDir();
+            Utils.getFreeSpace(cacheDir);
 
+            var cachedFiles = Utils.getCachedFileNames(cacheDir);
+            for (var index in cachedFiles){
+                Database.checkLastAccessDate(cachedFiles[index]);
+            }
 
+            Utils.clearCacheDirFromGarbage(cacheDir, userId);
             //TODO validate session
+        }
+    }
+
+    function setCacheDir() {
+        cacheDir = Database.getProperty("cacheDir");
+        if (!Utils.checkCacheDir(cacheDir)){
+            cacheDir = Utils.getDefaultCacheDirPath();
         }
     }
 

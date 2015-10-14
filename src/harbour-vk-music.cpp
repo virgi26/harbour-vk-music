@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Petr Vytovtov
+  Copyright (C) 2015 Alexander Ladygin
   Contact: Alexander Ladygin <fake.ae@gmail.com>
   All rights reserved.
 
@@ -39,14 +39,6 @@ static QObject *audioplayerinfo_provider(QQmlEngine *engine, QJSEngine *scriptEn
 
 int main(int argc, char *argv[])
 {
-    // SailfishApp::main() will display "qml/template.qml", if you need more
-    // control over initialization, you can use:
-    //
-    //   - SailfishApp::application(int, char *[]) to get the QGuiApplication *
-    //   - SailfishApp::createView() to get a new QQuickView * instance
-    //   - SailfishApp::pathTo(QString) to get a QUrl to a resource file
-    //
-    // To display the view, call "show()" (will show fullscreen on device).
 
     QGuiApplication *app(SailfishApp::application(argc, argv));
     QCoreApplication::setOrganizationName("harbour-vk-music");

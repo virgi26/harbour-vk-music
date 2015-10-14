@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Petr Vytovtov
+  Copyright (C) 2015 Alexander Ladygin
   Contact: Alexander Ladygin <fake.ae@gmail.com>
   All rights reserved.
 
@@ -48,6 +48,7 @@ public:
     Q_INVOKABLE void pause();
     Q_INVOKABLE void playNext();
     Q_INVOKABLE void signalFileCached(int itemIndex);
+    Q_INVOKABLE void signalFileDeleted(QString fileName);
 
 
     int currentIndex() const {return _currentIndex;}
@@ -75,6 +76,7 @@ signals:
     void playNextRequested();
     void listSizeChanged();
     void fileCached(int itemIndex);
+    void fileDeleted(QString fileName);
 
 private:
     int _currentIndex;

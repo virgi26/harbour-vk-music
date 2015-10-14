@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Petr Vytovtov
+  Copyright (C) 2015 Alexander Ladygin
   Contact: Alexander Ladygin <fake.ae@gmail.com>
   All rights reserved.
 
@@ -39,9 +39,79 @@ function _initDatabase() {
     //creating tables
     _db.transaction( function (tx) {
             tx.executeSql("create table if not exists properties (key TEXT primary key, value TEXT)");
+            tx.executeSql("create table if not exists last_access_date (fileName TEXT primary key, date INTEGER)");
         }
     );
     console.log("initDatabase finished");
+}
+
+function getLastAccessedFileName(){
+    console.log("getLastAccessedFileName started");
+    var db = _getDatabase();
+    var retValue;
+
+    db.readTransaction(
+                function (tx) {
+                    var queryResults = tx.executeSql("select fileName from last_access_date where date = (select min(date) from last_access_date)");
+
+                    if (queryResults.rows.length !== 1) {//wtf?
+                        return "";
+                    }
+
+                    retValue = queryResults.rows.item(0).fileName;
+                    console.log("getLastAccessedFileName: " + retValue);
+                }
+    );
+
+    if (retValue){
+        return retValue;
+    } else {
+        return "";
+    }
+}
+
+function removeLastAccessedEntry(fileName){
+    console.log("removeLastAccessedEntry started: " + fileName);
+    var db = _getDatabase();
+
+    db.transaction(
+                function (tx){
+                    tx.executeSql("DELETE FROM last_access_date where fileName = ?", [fileName]);
+                }
+    );
+}
+
+function setLastAccessedDate(fileName){
+    console.log("setLastAccessedDate started: " + fileName);
+    var db = _getDatabase();
+
+    db.transaction(
+                function (tx){
+                    tx.executeSql("REPLACE INTO last_access_date (fileName, date) VALUES (?, ?)", [fileName, Date.now()]);
+                }
+    );
+}
+
+function checkLastAccessDate(fileName){
+    console.log("checkLastAccessDate started: " + fileName);
+    var db = _getDatabase();
+
+    db.transaction(
+                function (tx){
+                    tx.executeSql("INSERT OR IGNORE INTO last_access_date (fileName, date) VALUES (?, ?)", [fileName, Date.now()]);
+                }
+    );
+}
+
+function clearLastAccessedDateTable(){
+    console.log("clearLastAccessedDateTable started");
+    var db = _getDatabase();
+
+    db.transaction(
+                function (tx){
+                    tx.executeSql("DELETE FROM last_access_date");
+                }
+    );
 }
 
 function getProperty(propertyName){
@@ -53,7 +123,7 @@ function getProperty(propertyName){
                 function (tx) {
                     var queryResults = tx.executeSql("select value from properties where key = ?", [propertyName]);
 
-                    if (queryResults.rows.length != 1) {//propery not found
+                    if (queryResults.rows.length !== 1) {//propery not found
                         return "";
                     }
 
@@ -76,8 +146,7 @@ function setProperty(propertyName, propertyValue){
 
     db.transaction(
                 function (tx){
-                    tx.executeSql("DELETE FROM properties where key = ?", [propertyName]);
-                    tx.executeSql("INSERT INTO properties (key, value) VALUES (?, ?)", [propertyName, propertyValue]);
+                    tx.executeSql("REPLACE INTO properties (key, value) VALUES (?, ?)", [propertyName, propertyValue]);
                 }
     );
 }

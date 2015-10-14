@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Petr Vytovtov
+  Copyright (C) 2015 Alexander Ladygin
   Contact: Alexander Ladygin <fake.ae@gmail.com>
   All rights reserved.
 
@@ -18,6 +18,7 @@
   You should have received a copy of the GNU General Public License
   along with Harbour-vk-music.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import harbour.vk.music.audioplayerinfo 1.0
@@ -52,6 +53,20 @@ ListItem {
         maximumLineCount: 1
 
         color: index === listView.currentIndex ? Theme.highlightColor : Theme.primaryColor
+
+        SequentialAnimation on scale {
+            id: highlight
+            running: false
+
+            NumberAnimation {
+                to: 1.1
+                duration: 200
+            }
+            NumberAnimation {
+                to: 1
+                duration: 200
+            }
+        }
     }
 
     Image {
@@ -66,6 +81,8 @@ ListItem {
         source: "image://theme/icon-s-device-download"
         visible: cached
     }
+
+    //TODO add image for download error
 
     Component {
         id: contextMenu
@@ -91,6 +108,7 @@ ListItem {
 
     onClicked: {
         console.log("ListItem:onClicked");
+        highlight.start();
         controlsPanel.userInteraction = true;
         AudioPlayerInfo.currentIndex = index;
         controlsPanel.showFull();

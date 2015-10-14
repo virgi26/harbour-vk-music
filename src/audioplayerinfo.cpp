@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Petr Vytovtov
+  Copyright (C) 2015 Alexander Ladygin
   Contact: Alexander Ladygin <fake.ae@gmail.com>
   All rights reserved.
 
@@ -95,4 +95,8 @@ void AudioPlayerInfo::playNext(){
 
 void AudioPlayerInfo::signalFileCached(int itemIndex){
     emit fileCached(itemIndex);
+}
+
+void AudioPlayerInfo::signalFileDeleted(QString fileName){
+    emit fileDeleted(fileName);
 }

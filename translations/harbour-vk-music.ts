@@ -2,6 +2,21 @@
 <!DOCTYPE TS>
 <TS version="2.1">
 <context>
+    <name>About</name>
+    <message>
+        <source>About</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mail to</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>AlbumsPage</name>
     <message>
         <source>Albums</source>
@@ -9,6 +24,25 @@
     </message>
     <message>
         <source>Refresh</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>CacheDirDialog</name>
+    <message>
+        <source>Select path</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Local cache</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>SD card directory</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>SD card hidden directory</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -56,17 +90,20 @@
         <source>Error occured</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>About</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>Notification</name>
+    <message>
+        <source>Error occured</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Settings</name>
-    <message>
-        <source>Author</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Mail to</source>
-        <translation type="unfinished"></translation>
-    </message>
     <message>
         <source>Cache directory size</source>
         <translation type="unfinished"></translation>
@@ -77,6 +114,34 @@
     </message>
     <message>
         <source>Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Free space available</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Minimum free space</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cache location</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Human friendly file names</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Local cache</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>SD card directory</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>SD card hidden directory</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -8,6 +8,15 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Wed Oct 13 2015 Alex <fake.ae@gmail.com> 0.6-1
+- internal changes and small tweaks
+- show available disk space
+- check available disk space before downloading, always leave 1GB of available disk space
+- ability to choose cache directory in Settings. Available options are:
+1) internal phone cache
+2) SD card directory (harbour-vk-music)
+3) SD card hidden directory (.harbour-vk-music)
+
 * Wed Oct 08 2015 Alex <fake.ae@gmail.com> 0.5-1
 - play audio from albums
 

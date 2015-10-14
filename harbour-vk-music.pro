@@ -36,7 +36,10 @@ OTHER_FILES += qml/harbour-vk-music.qml \
     qml/images/logo.png \
     rpm/harbour-vk-music.changes \
     README.md \
-    qml/pages/AlbumsPage.qml
+    qml/pages/AlbumsPage.qml \
+    qml/pages/CacheDirDialog.qml \
+    qml/pages/About.qml \
+    qml/pages/Notification.qml
 
 # to disable building translations every time, comment out the
 # following CONFIG line

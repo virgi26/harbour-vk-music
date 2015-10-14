@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Petr Vytovtov
+  Copyright (C) 2015 Alexander Ladygin
   Contact: Alexander Ladygin <fake.ae@gmail.com>
   All rights reserved.
 
@@ -19,7 +19,6 @@
   along with Harbour-vk-music.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 import QtQuick 2.2
 import Sailfish.Silica 1.0
 import "../utils/vkapi.js" as VKAPI
@@ -27,12 +26,16 @@ import "../utils/vkapi.js" as VKAPI
 Page {
     id: page
 
+    property string errorMessage
+    property int errorCode
     property var applyAlbumFilter
     property bool endOfAlbumList: false
 
     property alias listModel: listModel
 
     SilicaFlickable {
+        id: flickable//do not change, binded to name in Notification component
+
         anchors.fill: parent
 
         PageHeader {
@@ -134,6 +137,10 @@ Page {
         running: false // true
     }
 
+    Loader {
+        id:notificationLoader//do not change, binded to name in Notification component
+    }
+
     onStatusChanged: {
         console.log("onStatusChanged = " + page.status);
 
@@ -222,5 +229,17 @@ Page {
         }
 
         setCurrentItemIndex();
+    }
+
+    function handleError(code, message){
+        console.log("handleError");
+        loadingIndicator.running = false;
+
+        errorMessage = message;
+        errorCode = code;
+        flickable.enabled = false;
+        flickable.visible = false;
+        notificationLoader.active = true;
+        notificationLoader.source = "Notification.qml";
     }
 }

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Petr Vytovtov
+  Copyright (C) 2015 Alexander Ladygin
   Contact: Alexander Ladygin <fake.ae@gmail.com>
   All rights reserved.
 
@@ -22,6 +22,8 @@
 #define UTILS_H
 
 #include <QObject>
+#include <QProcess>
+#include <QVariant>
 
 class Utils : public QObject
 {
@@ -35,8 +37,25 @@ public:
     Q_INVOKABLE QString getDefaultCacheDirPath();
     Q_INVOKABLE QString getCacheDirSize(QString dirPath);
     Q_INVOKABLE void clearCacheDir(QString dirPath);
+    Q_INVOKABLE int deleteFile(QString dirPath, QString fileName);
     Q_INVOKABLE void clearCacheDirFromGarbage(QString dirPath, QString userId);
     Q_INVOKABLE QString encodeURL(QString url);
+    Q_INVOKABLE void getFreeSpace(QString dirPath);
+    Q_INVOKABLE QString sdcardPath() const;
+    Q_INVOKABLE QVariantList getCachedFileNames(QString dirPath);
+    Q_INVOKABLE bool checkCacheDir(QString dirPath);
+
+signals:
+    void freeSpaceUpdated(const int freeSpace);
+
+private slots:
+    void freeSpaceResponse(int sugnalNum);
+
+private:
+    QStringList mountPoints() const;
+
+    QProcess *m_process;
+
 };
 
 #endif // UTILS_H

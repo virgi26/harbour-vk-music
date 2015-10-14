@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 Petr Vytovtov
+  Copyright (C) 2015 Alexander Ladygin
   Contact: Alexander Ladygin <fake.ae@gmail.com>
   All rights reserved.
 
@@ -18,12 +18,14 @@
   You should have received a copy of the GNU General Public License
   along with Harbour-vk-music.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import QtMultimedia 5.0
 import harbour.vk.music.downloadmanager 1.0
 import harbour.vk.music.audioplayerinfo 1.0
 import "../utils/misc.js" as Misc
+import "../utils/database.js" as DB
 
 DockedPanel {
     id: controlsPanel
@@ -226,6 +228,7 @@ DockedPanel {
 
         onStopped: {
             console.log("playback stopped with userInteraction = " + userInteraction);
+            AudioPlayerInfo.status = AudioPlayerInfo.Paused;
             if (userInteraction){//stopped by user
                 //do nothing
             } else {//end of the song, play next
@@ -273,12 +276,13 @@ DockedPanel {
 
         onDownloadComplete: {
             console.log("Download Complete");
-//            musicListPage.listModel.setProperty(musicListPage.listView.currentIndex, "cached", true);
             AudioPlayerInfo.signalFileCached(AudioPlayerInfo.currentIndex);
             song.cached = true;
             audioPlayer.source = filePath;
             AudioPlayerInfo.status = AudioPlayerInfo.Paused;
             audioPlayer.play();
+            DB.setLastAccessedDate(Misc.getFileName(song));
+            Utils.getFreeSpace(cacheDir);
         }
 
         onDownloadUnsuccessful: {
@@ -366,16 +370,37 @@ DockedPanel {
         song = newSong;
         AudioPlayerInfo.title = song.title;
         AudioPlayerInfo.artist = song.artist;
-        var filePath = Utils.getFilePath("", Misc.getFileName(song));
+        var fileName = Misc.getFileName(song);//no extension
+        var filePath = Utils.getFilePath(cacheDir, fileName);
         if (filePath) {
             if (!newSong.cached){
-//                musicListPage.listModel.setProperty(musicListPage.listView.currentIndex, "cached", true);
                 AudioPlayerInfo.signalFileCached(AudioPlayerInfo.currentIndex);
             }
             audioPlayer.source = filePath;
             audioPlayer.play();
-        } else {
-            downloadManager.download(song.url, Misc.getFileName(song), null);
+            DB.setLastAccessedDate(fileName);
+        } else {//check free space before download
+            if (freeSpaceKBytes < minimumFreeSpaceKBytes){
+                console.log("out of free disk space");
+                for (var i = 0; i < 1000 && freeSpaceKBytes < minimumFreeSpaceKBytes; i++){//delete files until there is space
+                    var lastAccessedFileName = DB.getLastAccessedFileName();
+                    if (lastAccessedFileName){
+                        freeSpaceKBytes += Utils.deleteFile(cacheDir, lastAccessedFileName);//returns size of deleted file
+                        DB.removeLastAccessedEntry(lastAccessedFileName);
+                        AudioPlayerInfo.signalFileDeleted(lastAccessedFileName);
+                        console.log("freeSpaceKBytes after delete = " + freeSpaceKBytes);
+                    } else {
+                        break;
+                    }
+                }
+            }
+            if (freeSpaceKBytes < minimumFreeSpaceKBytes){//still? play from web
+                audioPlayer.source = song.url;
+                audioPlayer.play();
+                Utils.getFreeSpace(cacheDir);
+            } else {//free space ok, download
+                downloadManager.download(song.url, fileName, cacheDir);
+            }
         }
     }
 

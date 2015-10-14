@@ -18,9 +18,45 @@
   You should have received a copy of the GNU General Public License
   along with Harbour-vk-music.  If not, see <http://www.gnu.org/licenses/>.
 */
-.pragma library
+import QtQuick 2.0
+import Sailfish.Silica 1.0
+import "../utils/misc.js" as Misc
 
-function getFileName(song) {
-    return song.owner_id + "_" + song.aid;
+Page {
+    id: settings
+    property var clearIcons
+
+    PageHeader {
+        id: header
+        title: qsTr("About")
+
+        anchors.top: parent.top
+    }
+
+    SilicaFlickable {
+        anchors {
+            top: header.bottom
+        }
+
+        width: parent.width
+        contentHeight: column.height
+
+        Column {
+            id: column
+
+            width: parent.width
+
+            spacing: Theme.paddingMedium
+
+            DetailItem {
+                label: qsTr("Author")
+                value: "Alexander Ladygin (virgi26)"
+            }
+
+            DetailItem {
+                label: qsTr("Mail to")
+                value: "fake.ae@gmail.com"
+            }
+        }
+    }
 }
-
