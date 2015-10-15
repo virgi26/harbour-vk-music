@@ -19,7 +19,7 @@
   along with Harbour-vk-music.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import QtQuick 2.2
+import QtQuick 2.0
 import Sailfish.Silica 1.0
 import "../utils/vkapi.js" as VKAPI
 

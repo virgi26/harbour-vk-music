@@ -33,13 +33,17 @@ OTHER_FILES += qml/harbour-vk-music.qml \
     qml/utils/vkapi.js \
     qml/pages/ControlsPanel.qml \
     qml/utils/misc.js \
-    qml/images/logo.png \
     rpm/harbour-vk-music.changes \
     README.md \
     qml/pages/AlbumsPage.qml \
     qml/pages/CacheDirDialog.qml \
     qml/pages/About.qml \
-    qml/pages/Notification.qml
+    qml/pages/Notification.qml \
+    qml/pages/ScrollingLabel.qml \
+    qml/pages/MinSpaceDialog.qml \
+    qml/images/harbour-vk-music.png \
+    qml/images/headphones.png \
+    qml/images/no-headphones.png
 
 # to disable building translations every time, comment out the
 # following CONFIG line

@@ -61,6 +61,33 @@
     </message>
 </context>
 <context>
+    <name>MinSpaceDialog</name>
+    <message>
+        <source>Select size</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>1GB</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>2GB</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>5GB</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No cache</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No restrictions</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>MusicList</name>
     <message>
         <source>My music</source>
@@ -142,6 +169,26 @@
     </message>
     <message>
         <source>SD card hidden directory</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>1GB</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>2GB</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>5GB</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No cache</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No restrictions</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

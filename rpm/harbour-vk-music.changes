@@ -8,7 +8,15 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
-* Wed Oct 13 2015 Alex <fake.ae@gmail.com> 0.6-1
+* Thu Oct 15 2015 Alex <fake.ae@gmail.com> 0.8-1
+- scrolling title in control panel
+- choose minimum free space
+
+* Wed Oct 14 2015 Alex <fake.ae@gmail.com> 0.7-1
+- animated headphones
+- fixed a bug with duplicates
+
+* Wed Oct 14 2015 Alex <fake.ae@gmail.com> 0.6-4
 - internal changes and small tweaks
 - show available disk space
 - check available disk space before downloading, always leave 1GB of available disk space

@@ -25,7 +25,7 @@ import "../utils/database.js" as DB
 Dialog {
     DialogHeader {
         id: header
-        title: qsTr("Select path")
+        title: qsTr("Select size")
     }
 
     SilicaListView {
@@ -58,28 +58,21 @@ Dialog {
     }
 
     Component.onCompleted: {
-        listModel.append({path: qsTr("Local cache")});
-        if (sdcardPath){
-            listModel.append({path: qsTr("SD card directory")});
-            listModel.append({path: qsTr("SD card hidden directory")});
-        }
+        listModel.append({path: qsTr("No restrictions")});
+        listModel.append({path: qsTr("1GB")});
+        listModel.append({path: qsTr("2GB")});
+        listModel.append({path: qsTr("5GB")});
+        listModel.append({path: qsTr("No cache")});
     }
 
     onAccepted: {
-        var oldValue = cacheDir;
         switch (listView.currentIndex){
-            case 1: cacheDir = sdcardPath + "/harbour-vk-music";break;
-            case 2: cacheDir = sdcardPath + "/.harbour-vk-music";break;
-            default: cacheDir = Utils.getDefaultCacheDirPath();
-        }
-
-        if (!Utils.checkCacheDir(cacheDir)){
-            cacheDir = oldValue;
-        }
-
-        if (oldValue !== cacheDir){
-            Utils.clearCacheDir(oldValue);
-            DB.clearLastAccessedDateTable();
+            case 0: minimumFreeSpaceKBytes = 0;break;
+            case 1: minimumFreeSpaceKBytes = 1024*1024;break;
+            case 2: minimumFreeSpaceKBytes = 2*1024*1024;break;
+            case 3: minimumFreeSpaceKBytes = 5*1024*1024;break;
+            case 4: minimumFreeSpaceKBytes = 1024*1024*1024;break;
+            default: minimumFreeSpaceKBytes = 1024*1024;
         }
     }
 

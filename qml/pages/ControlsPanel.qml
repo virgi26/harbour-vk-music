@@ -89,19 +89,29 @@ DockedPanel {
             color: Theme.highlightColor
         }
 
-        Label {
+        ScrollingLabel {
             id: titleLabel
 
             visible: !partiallyHidden
+
+            anchors {
+                left: parent.left
+                right: parent.right
+            }
 
             text: {
                 song.title ? song.title : ""
             }
             font.pixelSize: Theme.fontSizeMedium
-            truncationMode: TruncationMode.Elide
-            x: Theme.horizontalPageMargin
-            width: parent.width - 2*Theme.paddingLarge
+            textOffset: Theme.horizontalPageMargin
             color: Theme.secondaryHighlightColor
+
+            onTextChanged: {
+                if (controlsPanel.open && !controlsPanel.partiallyHidden){
+                    titleLabel.stopAnimation();
+                    titleLabel.startAnimation();
+                }
+            }
         }
 
         Row {
@@ -247,7 +257,7 @@ DockedPanel {
 
         onClicked: {
             console.log("dockPanelMouseArea:onClicked")
-            partiallyHidden = false;
+            showFull();
         }
     }
 
@@ -317,7 +327,7 @@ DockedPanel {
         id: waitForDockerCloseAnimationAndOpenTimer
 
         triggeredOnStart: false
-        interval: 500
+        interval: 0
         repeat: false
         running: false
 
@@ -406,6 +416,7 @@ DockedPanel {
 
     function partiallyHide(){
         console.log("partiallyHide");
+        titleLabel.stopAnimation();
 
         if (!applicationWindow.applicationActive){
             return;
@@ -413,13 +424,14 @@ DockedPanel {
 
         if (!partiallyHidden
                 || !open){
-            controlsPanel.hide();
+            controlsPanel.hide(true);
             waitForDockerCloseAnimationAndOpenTimer.start();
         }
     }
 
     function hidePanel(){
         console.log("hidePanel");
+        titleLabel.stopAnimation();
 
         if (!applicationWindow.applicationActive){
             return;
@@ -442,6 +454,8 @@ DockedPanel {
             waitForKeyboardCloseAnimationAndOpenTimer.start();
         }
 
+        titleLabel.stopAnimation();
+        titleLabel.startAnimation();
     }
 
     function stop(){

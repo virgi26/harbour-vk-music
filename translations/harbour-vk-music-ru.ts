@@ -61,6 +61,33 @@
     </message>
 </context>
 <context>
+    <name>MinSpaceDialog</name>
+    <message>
+        <source>Select size</source>
+        <translation>Выберите размер</translation>
+    </message>
+    <message>
+        <source>1GB</source>
+        <translation>1ГБ</translation>
+    </message>
+    <message>
+        <source>2GB</source>
+        <translation>2ГБ</translation>
+    </message>
+    <message>
+        <source>5GB</source>
+        <translation>5ГБ</translation>
+    </message>
+    <message>
+        <source>No cache</source>
+        <translation>Не сохранять кэш</translation>
+    </message>
+    <message>
+        <source>No restrictions</source>
+        <translation>Без ограничений</translation>
+    </message>
+</context>
+<context>
     <name>MusicList</name>
     <message>
         <source>My music</source>
@@ -143,6 +170,26 @@
     <message>
         <source>SD card hidden directory</source>
         <translation>SD карта, скрытая папка</translation>
+    </message>
+    <message>
+        <source>1GB</source>
+        <translation>1ГБ</translation>
+    </message>
+    <message>
+        <source>2GB</source>
+        <translation>2ГБ</translation>
+    </message>
+    <message>
+        <source>5GB</source>
+        <translation>5ГБ</translation>
+    </message>
+    <message>
+        <source>No cache</source>
+        <translation>Не сохранять кэш</translation>
+    </message>
+    <message>
+        <source>No restrictions</source>
+        <translation>Без ограничений</translation>
     </message>
 </context>
 <context>

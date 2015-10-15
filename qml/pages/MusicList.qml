@@ -349,7 +349,7 @@ Page {
         target: applicationWindow
 
         onAccessTokenChanged: {//reload list
-            console.log("onAccessTokenChanged: " + accessToken);
+            console.log("MusicList:onAccessTokenChanged: " + accessToken);
             if (accessToken){
                 reloadList();
                 waitForPageStack.start();
@@ -437,6 +437,7 @@ Page {
 
     Component.onCompleted: {
         if (accessToken){
+            reloadList();
             waitForPageStack.start();
         }
     }

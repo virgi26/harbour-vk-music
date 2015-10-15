@@ -55,10 +55,69 @@ Page {
                 value: Math.floor(freeSpaceKBytes / 1024) + " MB"
             }
 
-            DetailItem {
+//            DetailItem {
+//                id: minFreeSpace
+//                label: qsTr("Minimum free space")
+//                value: Math.floor(minimumFreeSpaceKBytes / 1024) + " MB"
+//            }
+
+            BackgroundItem {
                 id: minFreeSpace
-                label: qsTr("Minimum free space")
-                value: Math.floor(minimumFreeSpaceKBytes / 1024) + " MB"
+                width: parent.width
+                height: Math.max(minFreeSpaceLabelText.height, minFreeSpaceValueText.height) + 2*Theme.paddingSmall
+
+                Text {
+                    id: minFreeSpaceLabelText
+
+                    text: qsTr("Minimum free space")
+
+                    y: Theme.paddingSmall
+                    anchors {
+                        left: parent.left
+                        right: parent.horizontalCenter
+                        rightMargin: Theme.paddingSmall
+                        leftMargin: Theme.horizontalPageMargin
+                    }
+                    horizontalAlignment: Text.AlignRight
+                    color: Theme.secondaryHighlightColor
+                    font.pixelSize: Theme.fontSizeSmall
+                    textFormat: Text.PlainText
+                    wrapMode: Text.Wrap
+                }
+
+                Text {
+                    id: minFreeSpaceValueText
+
+                    y: Theme.paddingSmall
+                    anchors {
+                        left: parent.horizontalCenter
+                        right: parent.right
+                        leftMargin: Theme.paddingSmall
+                        rightMargin: Theme.horizontalPageMargin
+                    }
+
+                    text: {
+                        switch (minimumFreeSpaceKBytes){
+                            case 0: return qsTr("No restrictions");
+                            case 1024*1024: return qsTr("1GB");
+                            case 2*1024*1024: return qsTr("2GB");
+                            case 5*1024*1024: return qsTr("5GB");
+                            case 1024*1024*1024: return qsTr("No cache");
+                            default: return qsTr("1GB");
+                        }
+                    }
+
+                    horizontalAlignment: Text.AlignLeft
+                    verticalAlignment: Text.AlignVCenter
+                    color: Theme.highlightColor
+                    font.pixelSize: Theme.fontSizeSmall
+                    textFormat: Text.PlainText
+                    wrapMode: Text.Wrap
+                }
+
+                onClicked: {
+                    var dialog = pageStack.push(Qt.resolvedUrl("MinSpaceDialog.qml"));
+                }
             }
 
             DetailItem {

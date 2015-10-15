@@ -29,11 +29,11 @@ ApplicationWindow
 {
     id: applicationWindow
 
-    property string accessToken
-    property int userId
-    property string cacheDir
+    property string accessToken: Database.getProperty("accessToken");
+    property int userId: Database.getProperty("userId")
+    property string cacheDir: Database.getProperty("cacheDir")
     property int freeSpaceKBytes
-    property int minimumFreeSpaceKBytes: 1024 * 1024
+    property int minimumFreeSpaceKBytes: Database.getProperty("minimumFreeSpaceKBytes")
     property string sdcardPath: Utils.sdcardPath()
     property bool humanFriendlyFileNames: false
 
@@ -52,8 +52,9 @@ ApplicationWindow
     _defaultPageOrientations: Orientation.Portrait
 
     Component.onCompleted: {
-        userId = Database.getProperty("userId");
-        accessToken = Database.getProperty("accessToken");
+        if (!minimumFreeSpaceKBytes){
+            minimumFreeSpaceKBytes = 1024*1024;
+        }
     }
 
     Component.onDestruction: {
@@ -78,6 +79,10 @@ ApplicationWindow
                 freeSpaceKBytes = freeSpace;
             }
         }
+    }
+
+    onMinimumFreeSpaceKBytesChanged: {
+        Database.setProperty("minimumFreeSpaceKBytes", minimumFreeSpaceKBytes);
     }
 
     onCacheDirChanged: {

@@ -24,8 +24,10 @@ import Sailfish.Silica 1.0
 import harbour.vk.music.audioplayerinfo 1.0
 
 CoverBackground {
+    id: cover
+
     Image {
-        id: logo
+        id: noHeadphonesImage
 
         anchors {
             verticalCenter: parent.verticalCenter
@@ -33,16 +35,51 @@ CoverBackground {
             horizontalCenter: parent.horizontalCenter
         }
 
-        source: "../images/harbour-vk-music.png"
+        source: "../images/no-headphones.png"
         height: parent.width/2
         width: parent.width/2
+    }
+
+    Image {
+        id: headphonesImage
+
+        anchors {
+            verticalCenter: parent.verticalCenter
+            verticalCenterOffset: -parent.height/6
+            horizontalCenter: parent.horizontalCenter
+        }
+
+        source: "../images/headphones.png"
+        height: parent.width/2
+        width: parent.width/2
+
+        SequentialAnimation on scale{
+            id: animateHeadphones
+
+            NumberAnimation { to: 1.1; duration: 100 }
+            NumberAnimation { to: 1.0; duration: 100 }
+            NumberAnimation { to: 1.1; duration: 100 }
+            NumberAnimation { to: 1.0; duration: 100 }
+        }
+
+        Timer {
+            running: cover.status === Cover.Active
+                        && AudioPlayerInfo.status === AudioPlayerInfo.Playing
+            interval: 5000
+            repeat: true
+            triggeredOnStart: true
+
+            onTriggered: {
+                animateHeadphones.start();
+            }
+        }
     }
 
     Label {
         id: label
 
         anchors {
-            top: logo.bottom
+            top: noHeadphonesImage.bottom
             topMargin: Theme.paddingLarge
             horizontalCenter: parent.horizontalCenter
         }
@@ -58,11 +95,11 @@ CoverBackground {
         id: coverAction
 
         CoverAction {
-            iconSource: AudioPlayerInfo.status == AudioPlayerInfo.Playing
+            iconSource: AudioPlayerInfo.status === AudioPlayerInfo.Playing
                             ? "image://theme/icon-cover-pause"
                             : "image://theme/icon-cover-play"
             onTriggered: {
-                AudioPlayerInfo.status == AudioPlayerInfo.Playing
+                AudioPlayerInfo.status === AudioPlayerInfo.Playing
                     ? AudioPlayerInfo.pause()
                     : AudioPlayerInfo.play()
             }
