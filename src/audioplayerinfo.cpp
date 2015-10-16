@@ -97,6 +97,14 @@ void AudioPlayerInfo::signalFileCached(int itemIndex){
     emit fileCached(itemIndex);
 }
 
+void AudioPlayerInfo::signalFileError(int itemIndex){
+    emit fileError(itemIndex);
+}
+
+void AudioPlayerInfo::signalFileUnCached(int itemIndex){
+    emit fileUnCached(itemIndex);
+}
+
 void AudioPlayerInfo::signalFileDeleted(QString fileName){
     emit fileDeleted(fileName);
 }

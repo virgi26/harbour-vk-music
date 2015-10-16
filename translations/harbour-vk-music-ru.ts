@@ -91,11 +91,15 @@
     <name>MusicList</name>
     <message>
         <source>My music</source>
-        <translation>Моя музыка</translation>
+        <translation>Моя музыку</translation>
     </message>
     <message>
         <source>Search</source>
         <translation>Поиск</translation>
+    </message>
+    <message>
+        <source>About</source>
+        <translation>О программе</translation>
     </message>
     <message>
         <source>Logout</source>
@@ -116,10 +120,6 @@
     <message>
         <source>Error occured</source>
         <translation>Возникла ошибка</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation>О программе</translation>
     </message>
 </context>
 <context>
@@ -191,6 +191,10 @@
         <source>No restrictions</source>
         <translation>Без ограничений</translation>
     </message>
+    <message>
+        <source>Show bit rate</source>
+        <translation>Показывать бит рейт</translation>
+    </message>
 </context>
 <context>
     <name>SongItem</name>
@@ -201,6 +205,14 @@
     <message>
         <source>Remove</source>
         <translation>Удалить</translation>
+    </message>
+    <message>
+        <source>Clear cache</source>
+        <translation>Очистить кэш</translation>
+    </message>
+    <message>
+        <source>Deleting</source>
+        <translation>Удаление</translation>
     </message>
 </context>
 </TS>

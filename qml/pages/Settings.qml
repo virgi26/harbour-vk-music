@@ -22,6 +22,7 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import "../utils/misc.js" as Misc
+import "../utils/database.js" as DB
 
 Page {
     id: settings
@@ -212,6 +213,8 @@ Page {
             TextSwitch {
                 id: humanFriendlyFileNamesSwitch
 
+                anchors.horizontalCenter: parent.horizontalCenter
+
                 text: qsTr("Human friendly file names")
                 checked: humanFriendlyFileNames
 
@@ -220,6 +223,20 @@ Page {
                 }
 
                 enabled: false;
+            }
+
+            TextSwitch {
+                id: enableBitRateSwitch
+
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                text: qsTr("Show bit rate")
+                checked: enableBitRate
+
+                onCheckedChanged: {
+                    enableBitRate = checked;
+                    DB.setProperty("enableBitRate", enableBitRate);
+                }
             }
         }
 

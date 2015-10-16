@@ -31,13 +31,9 @@ Item {
     MouseArea {
         id: mouseAreaFull
 
-//        width: Screen.width
-//        height: Screen.height
-//        x: 0
-//        y: 0
         anchors.fill: parent
 
-        onPressed: {
+        onClicked: {
             notificationLoader.active = false;
             flickable.enabled = true;
             flickable.visible = true;
@@ -75,7 +71,7 @@ Item {
                 id: mouseArea
                 anchors.fill: parent
 
-                onPressed: {
+                onClicked: {
                     notificationLoader.active = false;
                     flickable.enabled = true;
                     flickable.visible = true;

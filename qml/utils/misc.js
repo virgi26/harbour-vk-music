@@ -24,3 +24,6 @@ function getFileName(song) {
     return song.owner_id + "_" + song.aid;
 }
 
+function getFileName2(owner_id, aid) {
+    return owner_id + "_" + aid;
+}

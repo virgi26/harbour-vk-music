@@ -61,6 +61,7 @@ Page {
                     fill: parent
                     topMargin: Theme.paddingLarge
                     leftMargin: Theme.horizontalPageMargin
+                    rightMargin: Theme.horizontalPageMargin
                 }
                 width: parent.width
 

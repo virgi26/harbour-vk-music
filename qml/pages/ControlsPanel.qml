@@ -61,13 +61,14 @@ DockedPanel {
 
     dock: Dock.Bottom
 
-    Column{//TODO rework all anchors, get rid of the column
+    Column{
         id: column
 
         width: parent.width
         spacing: partiallyHidden ? 0 : Theme.paddingMedium
 
         Rectangle {
+            id: topSpacer
             visible: !partiallyHidden
             height: Theme.paddingSmall
             width: 1
@@ -163,7 +164,6 @@ DockedPanel {
                     }
                 }
             }
-
         }
 
         Slider {
@@ -189,7 +189,8 @@ DockedPanel {
                                 )
             enabled: (audioPlayer.status === Audio.Loaded
                             || audioPlayer.status === Audio.Buffered)
-                        && (!partiallyHidden)
+                        && !partiallyHidden
+                        && !song.error
 
             label: partiallyHidden
                    ? (song.artist
@@ -209,6 +210,85 @@ DockedPanel {
         }
     }
 
+    Item{
+        anchors {
+            right: column.right
+            top: column.top
+            topMargin: buttons.y + (buttons.height - downloadIndicator.height)/2
+            rightMargin: Theme.paddingSmall
+        }
+
+        height: downloadIndicator.height
+        width: downloadIndicator.width
+
+
+        BusyIndicator {
+            id: downloadIndicator
+
+            property bool clearingCache: false
+
+            size: BusyIndicatorSize.Medium
+            running: applicationWindow.applicationActive
+                        && (audioPlayer.status === Audio.Loading
+                            || audioPlayer.status === Audio.Buffering
+                            || downloadManager.downloading
+                            || clearingCache
+                            )
+
+
+        }
+
+        Text {
+            id: progressText
+            anchors.centerIn: downloadIndicator
+            color: Theme.primaryColor
+            visible: downloadIndicator.running
+            font.pixelSize: Theme.fontSizeSmall
+        }
+
+        IconButton {
+            id: cachedIcon
+
+            anchors.centerIn: downloadIndicator
+
+            icon.source: "image://theme/icon-s-device-upload"
+            visible: false
+
+            onClicked:{//clear cache
+                downloadIndicator.clearingCache = true;
+                Utils.deleteFile(cacheDir, Misc.getFileName(song));
+                DB.removeLastAccessedEntry(Misc.getFileName(song));
+                Utils.getFreeSpace(cacheDir);
+                AudioPlayerInfo.signalFileUnCached(AudioPlayerInfo.currentIndex);
+                controlsPanel.hideCacheIcon();
+                downloadIndicator.clearingCache = false;
+            }
+        }
+
+        Image {
+            id: errorIcon
+
+            anchors.centerIn: downloadIndicator
+
+            height: Theme.iconSizeSmall
+            width: Theme.iconSizeSmall
+            source: "../images/exclamation.png"
+            visible: false
+        }
+    }
+
+    Label {
+        id: bitRateLabel
+
+        anchors.left: column.left
+        anchors.leftMargin: Theme.paddingSmall
+        anchors.bottom: column.bottom
+
+        visible: !partiallyHidden && enableBitRate
+
+        font.pixelSize: Theme.fontSizeExtraSmall
+    }
+
     Audio {
         id: audioPlayer
 
@@ -218,6 +298,8 @@ DockedPanel {
 
         onStatusChanged: {
             console.log("audio status: " + getAudioStatus(status));
+
+            bitRateLabel.text = Math.floor(audioPlayer.metaData.audioBitRate/1000) + "kbps";
         }
 
         onPositionChanged: {
@@ -239,6 +321,8 @@ DockedPanel {
         onStopped: {
             console.log("playback stopped with userInteraction = " + userInteraction);
             AudioPlayerInfo.status = AudioPlayerInfo.Paused;
+            songProgress.value = 0;
+            bitRateLabel.text = "";
             if (userInteraction){//stopped by user
                 //do nothing
             } else {//end of the song, play next
@@ -261,23 +345,13 @@ DockedPanel {
         }
     }
 
-    BusyIndicator {
-        anchors {
-            right: column.right
-            top: column.top
-            topMargin: (artistLabel.height + titleLabel.height) / 2
-            rightMargin: Theme.horizontalPageMargin
-        }
 
-        size: BusyIndicatorSize.ExtraSmall
-        running: applicationWindow.applicationActive
-                    && (audioPlayer.status === Audio.Loading
-                        || audioPlayer.status === Audio.Buffering
-                        || downloadManager.downloading)
-    }
+
 
     DownloadManager {
         id: downloadManager
+
+        property int retryCount: 0
 
         onDownloadStarted: {
             console.log("Download Started");
@@ -286,8 +360,10 @@ DockedPanel {
 
         onDownloadComplete: {
             console.log("Download Complete");
+            retryCount = 0;
             AudioPlayerInfo.signalFileCached(AudioPlayerInfo.currentIndex);
             song.cached = true;
+            cachedIcon.visible = true;
             audioPlayer.source = filePath;
             AudioPlayerInfo.status = AudioPlayerInfo.Paused;
             audioPlayer.play();
@@ -297,10 +373,15 @@ DockedPanel {
 
         onDownloadUnsuccessful: {
             console.log("Download unsuccessful");
+            errorIcon.visible = true;
+            song.error = true;
+            AudioPlayerInfo.signalFileError(AudioPlayerInfo.currentIndex);
+//            AudioPlayerInfo.currentIndex++;
         }
 
         onProgress: {
             console.log("onProgress: " + nPercentage);
+            progressText.text = nPercentage + "%"
         }
     }
 
@@ -378,12 +459,14 @@ DockedPanel {
 
     function playSong(newSong){
         song = newSong;
+        cachedIcon.visible = song.cached;
+        errorIcon.visible = false;
         AudioPlayerInfo.title = song.title;
         AudioPlayerInfo.artist = song.artist;
         var fileName = Misc.getFileName(song);//no extension
         var filePath = Utils.getFilePath(cacheDir, fileName);
         if (filePath) {
-            if (!newSong.cached){
+            if (!song.cached){
                 AudioPlayerInfo.signalFileCached(AudioPlayerInfo.currentIndex);
             }
             audioPlayer.source = filePath;
@@ -459,7 +542,9 @@ DockedPanel {
     }
 
     function stop(){
-        audioPlayer.stop();
+        if (audioPlayer.playbackState === Audio.PlayingState){
+            audioPlayer.stop();
+        }
     }
 
     function play(){
@@ -483,5 +568,9 @@ DockedPanel {
         } else {
             console.log("wow! song not cached, this should not happen!");
         }
+    }
+
+    function hideCacheIcon(){
+        cachedIcon.visible = false;
     }
 }

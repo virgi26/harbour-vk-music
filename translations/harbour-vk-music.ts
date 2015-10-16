@@ -98,6 +98,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>About</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Logout</source>
         <translation type="unfinished"></translation>
     </message>
@@ -115,10 +119,6 @@
     </message>
     <message>
         <source>Error occured</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>About</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -191,6 +191,10 @@
         <source>No restrictions</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Show bit rate</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SongItem</name>
@@ -200,6 +204,14 @@
     </message>
     <message>
         <source>Remove</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Clear cache</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Deleting</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

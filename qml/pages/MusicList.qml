@@ -69,6 +69,7 @@ Page {
                     console.log("show search");
                     controlsPanel.hidePanel();
                     searchField.enabled = true;
+                    searchField.visible = true;
                     searchField.color = Theme.primaryColor
                 }
 
@@ -97,6 +98,7 @@ Page {
 
                 onStopped: {
                     searchField.enabled = false;
+                    searchField.visible = false;
                     searchField.color = "transparent"
                     flickable.forceActiveFocus();//for caret to disappear
                     searchShown = false;
@@ -190,6 +192,7 @@ Page {
             placeholderText: qsTr("Search")
             color: "transparent"
             enabled: false
+            visible: false
 
             EnterKey.enabled: text.length > 0
             EnterKey.iconSource: "image://theme/icon-m-search"
@@ -333,6 +336,7 @@ Page {
             album_id: -1
             genre_id: -1
             cached: false
+            error: false
         }
 
         onRowsInserted: {
@@ -375,16 +379,30 @@ Page {
             } else if (AudioPlayerInfo.currentIndex < -1
                     || AudioPlayerInfo.currentIndex >= listModel.count){//exceded values reassigned to defaultvalue
                 AudioPlayerInfo.currentIndex = -1;
-            } else if (AudioPlayerInfo.currentIndex === listModel.count - 1) {//last song is playing
-                requestMoreSongs();
             } else {
                 listView.currentItem.playThisSong();//autoplay on selecting new song
+                if (AudioPlayerInfo.currentIndex === listModel.count - 1) {//last song is playing
+                    requestMoreSongs();
+                }
             }
         }
 
         onFileCached: {
             console.log("AudioPlayerInfo:onFileCached");
             listModel.setProperty(itemIndex, "cached", true);
+            listModel.setProperty(itemIndex, "error", false);
+        }
+
+        onFileUnCached: {
+            console.log("AudioPlayerInfo:onFileUnCached");
+            listModel.setProperty(itemIndex, "cached", false);
+            listModel.setProperty(itemIndex, "error", false);
+        }
+
+        onFileError: {
+            console.log("AudioPlayerInfo:onFileError");
+            listModel.setProperty(itemIndex, "cached", false);
+            listModel.setProperty(itemIndex, "error", true);
         }
 
         onFileDeleted: {
@@ -402,10 +420,8 @@ Page {
         id: errorNotification
         category: "error"
         summary: qsTr("Error occured")
-        urgency: Notification.Critical
         onClicked: {
             console.log("Notification clicked");
-            pageStack.push(Qt.resolvedUrl("LoginPage.qml"));
         }
     }
 
@@ -436,9 +452,18 @@ Page {
     }
 
     Component.onCompleted: {
+        applicationWindow.validateToken();
         if (accessToken){
             reloadList();
             waitForPageStack.start();
+        }
+    }
+
+    onStatusChanged: {
+        if (musicList.status === PageStatus.Active){
+            if (controlsPanel.song){
+                controlsPanel.partiallyHide();
+            }
         }
     }
 
@@ -483,6 +508,7 @@ Page {
                 , lyrics_id: items[i].lyrics_id
                 , album_id: items[i].album_id
                 , genre_id: items[i].genre_id
+                , error: false
             };
             //check for cached file
             var filePath = Utils.getFilePath(cacheDir, Misc.getFileName(song));

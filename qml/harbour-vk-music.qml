@@ -36,6 +36,7 @@ ApplicationWindow
     property int minimumFreeSpaceKBytes: Database.getProperty("minimumFreeSpaceKBytes")
     property string sdcardPath: Utils.sdcardPath()
     property bool humanFriendlyFileNames: false
+    property bool enableBitRate: Database.getProperty("enableBitRate")
 
     readonly property int _DEFAULT_PAGE_SIZE: (Screen.sizeCategory >= Screen.Large) ? 60 : 30
 
@@ -99,7 +100,7 @@ ApplicationWindow
             console.log("access_token or user_id is undefined");
 //            pageStack.push(Qt.resolvedUrl("pages/LoginPage.qml"));
         } else {
-            setCacheDir();
+            checkCacheDir();
             Utils.getFreeSpace(cacheDir);
 
             var cachedFiles = Utils.getCachedFileNames(cacheDir);
@@ -112,8 +113,7 @@ ApplicationWindow
         }
     }
 
-    function setCacheDir() {
-        cacheDir = Database.getProperty("cacheDir");
+    function checkCacheDir() {
         if (!Utils.checkCacheDir(cacheDir)){
             cacheDir = Utils.getDefaultCacheDirPath();
         }

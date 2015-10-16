@@ -37,7 +37,6 @@ DownloadManager::DownloadManager(QObject *parent) :
     , _bAcceptRanges(false)
     , _nDownloadSize(0)
     , _nDownloadSizeAtPause(0)
-    , _filePath()
     , _downloading(false)
 {
 }
@@ -56,28 +55,26 @@ void DownloadManager::download(QUrl url, QString fileName, QString localDirPath)
 {
     qDebug() << "download: URL = " <<url.toString();
 
-    _filePath = "";
-
     if (_pCurrentReply != NULL)
     {
         pause();
     }
 
     _URL = url;
+    _fileName = fileName;
     {
-        QString path;
         if (!localDirPath.isNull() && !localDirPath.isEmpty()) {
-            path = localDirPath;
+            _path = localDirPath;
         } else {
-            path = Utils().getDefaultCacheDirPath();
+            _path = Utils().getDefaultCacheDirPath();
         }
 
         QString extension = "mp3";//vk only allows mp3
 
-        QFileInfo fileInfo(path.append("/").append(fileName).append(".").append(extension));
+        QFileInfo fileInfo(_path.append("/").append(fileName).append(".").append(extension));
 
-        _qsFileName = fileInfo.absoluteFilePath();
-        qDebug() << "download: local path =" << _qsFileName;
+        _qsFileAbsPath = fileInfo.absoluteFilePath();
+        qDebug() << "download: local path =" << _qsFileAbsPath;
     }
     _nDownloadSize = 0;
     _nDownloadSizeAtPause = 0;
@@ -181,7 +178,7 @@ void DownloadManager::finishedHead()
 //    _CurrentRequest = QNetworkRequest(url);
     _CurrentRequest.setRawHeader("Connection", "Keep-Alive");
     _CurrentRequest.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
-    _pFile = new QFile(_qsFileName + ".part");
+    _pFile = new QFile(_qsFileAbsPath + ".part");
     if (!_bAcceptRanges)
     {
         _pFile->remove();
@@ -199,13 +196,13 @@ void DownloadManager::finished()
 
     _Timer.stop();
     _pFile->close();
-    QFile::remove(_qsFileName);
-    _pFile->rename(_qsFileName + ".part", _qsFileName);
-    _filePath = _qsFileName;
+    QFile::remove(_qsFileAbsPath);
+    QFile::rename(_qsFileAbsPath + ".part", _qsFileAbsPath);
     _pCurrentReply = 0;
-    if (QFile(_qsFileName).size() > 0){
-        emit downloadComplete();
+    if (QFile(_qsFileAbsPath).size() > 1000){
+        emit downloadComplete(_qsFileAbsPath);
     } else {
+        QFile::remove(_qsFileAbsPath);
         emit downloadUnsuccessful();
     }
     _pFile = NULL;

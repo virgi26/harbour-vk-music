@@ -23,9 +23,11 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 import harbour.vk.music.audioplayerinfo 1.0
 import "../utils/vkapi.js" as VKAPI
+import "../utils/database.js" as DB
+import "../utils/misc.js" as Misc
 
 ListItem {
-    id: song
+    id: songItem
 
     contentHeight: label.height + 2*Theme.paddingSmall
     contentWidth: parent.width
@@ -78,33 +80,63 @@ ListItem {
             right: parent.right
         }
 
-        source: "image://theme/icon-s-device-download"
+        source: "image://theme/icon-s-device-upload"
         visible: cached
     }
 
-    //TODO add image for download error
+    Image {
+        id: errorIcon
+
+        anchors {
+            rightMargin: Theme.horizontalPageMargin
+            verticalCenter: parent.verticalCenter
+            right: parent.right
+        }
+
+        height: Theme.iconSizeSmall
+        width: Theme.iconSizeSmall
+        source: "../images/exclamation.png"
+        visible: error
+    }
+
+    RemorseItem { id: remorse }
 
     Component {
         id: contextMenu
         ContextMenu {
             MenuItem {
                 text: qsTr("Add")
-                onClicked: VKAPI.addAudio(song, accessToken, aid, owner_id, parseAPIResponse_add);
+                onClicked: VKAPI.addAudio(songItem, accessToken, aid, owner_id, parseAPIResponse_add);
                 visible: owner_id !== userId
             }
             MenuItem {
                 text: qsTr("Remove")
-                onClicked: VKAPI.removeAudio(song, accessToken, aid, owner_id, parseAPIResponse_remove);
+                onClicked: {
+                    remorse.execute(
+                                songItem
+                                , qsTr("Deleting")
+                                , remorseFunction
+                                , 3000
+                                )
+                }
                 visible: owner_id === userId
+            }
+            MenuItem {
+                text: qsTr("Clear cache")
+                onClicked: {
+                    Utils.deleteFile(cacheDir, Misc.getFileName2(owner_id, aid));
+                    DB.removeLastAccessedEntry(Misc.getFileName2(owner_id, aid));
+                    Utils.getFreeSpace(cacheDir);
+                    listModel.setProperty(index, "cached", false);
+                    if (index === listView.currentIndex){
+                        controlsPanel.hideCacheIcon();
+                    }
+                }
+
+                visible: cached
             }
         }
     }
-
-//    ListView.onRemove: SequentialAnimation {
-//        PropertyAction { target: song; property: "ListView.delayRemove"; value: true }
-//        NumberAnimation { target: song; property: "width"; to: 0; duration: 500; }
-//        PropertyAction { target: song; property: "ListView.delayRemove"; value: false }
-//    }
 
     onClicked: {
         console.log("ListItem:onClicked");
@@ -112,6 +144,11 @@ ListItem {
         controlsPanel.userInteraction = true;
         AudioPlayerInfo.currentIndex = index;
         controlsPanel.showFull();
+    }
+
+
+    function remorseFunction(){
+        VKAPI.removeAudio(songItem, accessToken, aid, owner_id, parseAPIResponse_remove);
     }
 
     function playThisSong(){
@@ -130,6 +167,7 @@ ListItem {
             , album_id: album_id
             , genre_id: genre_id
             , cached: cached
+            , error: error
         });
     }
 

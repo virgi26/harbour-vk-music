@@ -48,6 +48,8 @@ public:
     Q_INVOKABLE void pause();
     Q_INVOKABLE void playNext();
     Q_INVOKABLE void signalFileCached(int itemIndex);
+    Q_INVOKABLE void signalFileError(int itemIndex);
+    Q_INVOKABLE void signalFileUnCached(int itemIndex);
     Q_INVOKABLE void signalFileDeleted(QString fileName);
 
 
@@ -76,6 +78,8 @@ signals:
     void playNextRequested();
     void listSizeChanged();
     void fileCached(int itemIndex);
+    void fileError(int itemIndex);
+    void fileUnCached(int itemIndex);
     void fileDeleted(QString fileName);
 
 private:

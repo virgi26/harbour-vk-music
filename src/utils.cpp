@@ -266,7 +266,8 @@ void Utils::clearCacheDirFromGarbage(QString dirPath, QString userId) {
     qDir.setNameFilters(list);
     foreach (QFileInfo fileInfo, qDir.entryInfoList(list)){
         if (!fileInfo.fileName().startsWith(userId + "_")
-                || fileInfo.fileName().endsWith(".part")){
+                || fileInfo.fileName().endsWith(".part")
+                || fileInfo.size() < 1000){
             qDebug() << "Deleting file '" << fileInfo.fileName();
             QFile::remove(fileInfo.absoluteFilePath());
             count++;

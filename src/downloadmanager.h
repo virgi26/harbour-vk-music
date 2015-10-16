@@ -38,14 +38,12 @@ class DownloadManager : public QObject
 public:
     explicit DownloadManager(QObject *parent = 0);
     virtual ~DownloadManager();
-    Q_PROPERTY(QString filePath READ filePath)
-    QString filePath(){return _filePath;}
     Q_PROPERTY(bool downloading READ downloading NOTIFY downloadingChanged)
     bool downloading(){return _downloading;}
 
 signals:
 //    void addLine(QString qsLine);
-    void downloadComplete();
+    void downloadComplete(QString filePath);
     void progress(int nPercentage);
     void downloadStarted();
     void downloadingChanged();
@@ -66,7 +64,9 @@ private slots:
 
 private:
     QUrl _URL;
-    QString _qsFileName;
+    QString _path;
+    QString _fileName;
+    QString _qsFileAbsPath;
     QNetworkAccessManager* _pManager;
     QNetworkRequest _CurrentRequest;
     QNetworkReply* _pCurrentReply;
@@ -76,7 +76,6 @@ private:
     int _nDownloadSize;
     int _nDownloadSizeAtPause;
     QTimer _Timer;
-    QString _filePath;
     bool _downloading;
 };
 

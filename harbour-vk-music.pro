@@ -43,7 +43,8 @@ OTHER_FILES += qml/harbour-vk-music.qml \
     qml/pages/MinSpaceDialog.qml \
     qml/images/harbour-vk-music.png \
     qml/images/headphones.png \
-    qml/images/no-headphones.png
+    qml/images/no-headphones.png \
+    qml/images/exclamation.png
 
 # to disable building translations every time, comment out the
 # following CONFIG line
