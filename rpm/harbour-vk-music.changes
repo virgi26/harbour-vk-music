@@ -8,11 +8,12 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
-* Thu Oct 15 2015 Alex <fake.ae@gmail.com> 0.9-1
+* Thu Oct 26 2015 Alex <fake.ae@gmail.com> 0.9-1
 - mark unsuccessful downloads
 - clear cache for single file
 - remorse remove
 - show bit rate
+- shuffle/repeat feature
 
 * Thu Oct 15 2015 Alex <fake.ae@gmail.com> 0.8-1
 - scrolling title in control panel

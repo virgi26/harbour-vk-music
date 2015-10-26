@@ -27,7 +27,7 @@ import QtMultimedia 5.0
 import "../utils/database.js" as Database
 import "../utils/vkapi.js" as VKAPI
 import "../utils/misc.js" as Misc
-import harbour.vk.music.audioplayerinfo 1.0
+import harbour.vk.music.audioplayerhelper 1.0
 
 
 Page {
@@ -38,6 +38,11 @@ Page {
     property bool searchShown: false
     property bool listChanged: false
     property bool endOfAudioList: false
+    property bool searchInProgress: false
+    property bool showMoreButtonVisible: false
+    property bool showMore: false
+    property bool downloadPlayListMode: false
+    property var availableNumbers: []//contains song numbers available for shuffle
 
     property alias listView: listView
     property alias listModel: listModel
@@ -48,12 +53,11 @@ Page {
 
         anchors.fill: parent
 
-        Rectangle {//helper for searchField resize animation
+        Item {//helper for searchField resize animation
             id: magicalDivider
 
             anchors.left: parent.left
 
-            color: "transparent"
             y: -1
             height: 1
             width: searchIcon.width + Theme.horizontalPageMargin
@@ -102,14 +106,19 @@ Page {
                     searchField.color = "transparent"
                     flickable.forceActiveFocus();//for caret to disappear
                     searchShown = false;
-//                    controlsPanel.hidePanel();
                 }
             }
         }
 
         PageHeader {
             id: header
-            title: controlsPanel.albumId === -1 ? qsTr("My music") : controlsPanel.albumTitle
+            title: {
+                switch (controlsPanel.albumId){
+                    case -1: return qsTr("My music");
+                    case -2: return qsTr("Shuffle");
+                    default: return controlsPanel.albumTitle;
+                }
+            }
 
             anchors.top: parent.top
             anchors.left: magicalDivider.right
@@ -122,6 +131,24 @@ Page {
 
                 onClicked: {
                     pageStack.navigateForward(PageStackAction.Animated);
+                }
+
+                onPressAndHold: {
+                    secretTimer.start();
+                }
+
+                onReleased: {
+                    secretTimer.stop();
+                }
+
+                Timer {
+                    id: secretTimer
+                    interval: 5000
+                    running: false
+
+                    onTriggered: {
+                        downloadPlayList();
+                    }
                 }
             }
         }
@@ -142,9 +169,10 @@ Page {
             onClicked: {
                 if (!searchShown){
                     showSearch.start();
+                    listChanged = false;
                 } else {
                     flickable.forceActiveFocus();
-                    applySearchFilter();
+                    reloadList();
                 }
             }
         }
@@ -162,10 +190,10 @@ Page {
 
             onClicked: {
                 if (searchShown){
+                    searchField.text = "";
                     hideSearch.start();
                     if (listChanged){
-                        applySearchFilter();
-                        listChanged = false;
+                        reloadList();
                     }
                 }
             }
@@ -198,7 +226,7 @@ Page {
             EnterKey.iconSource: "image://theme/icon-m-search"
             EnterKey.onClicked: {
                 flickable.forceActiveFocus();
-                applySearchFilter();
+                reloadList();
             }
 
             onClicked: {
@@ -217,18 +245,16 @@ Page {
             anchors.top: spacer.bottom
             height: parent.height - header.height - 3*Theme.paddingMedium
             width: parent.width
-//            color: "transparent"
 
             SilicaListView {
                 id: listView
-
-                currentIndex: AudioPlayerInfo.currentIndex
 
                 anchors.fill: parent
                 anchors.bottomMargin: Theme.paddingLarge
 
                 delegate: SongItem {}
                 model: listModel
+                maximumFlickVelocity: 2500*Theme.pixelRatio
 
                 VerticalScrollDecorator {
                 }
@@ -240,19 +266,20 @@ Page {
 
                 displaced: listViewDisplacedAnimation
 
-                onMovementEnded: {
-                    if (atYEnd){
-                        requestMoreSongs();
-                    }
-                }
-
-                onCurrentIndexChanged: {
-                }
-
                 onMovementStarted: {
                     listView.forceActiveFocus();//hide keyboard
                     controlsPanel.partiallyHide();
                 }
+
+                onMovementEnded: {
+                    if (!searchInProgress && !endOfAudioList && (contentHeight - contentY - height < 500*Theme.pixelRatio)){
+                        requestMoreSongs();
+                    }
+                }
+
+                footer: showMoreButtonVisible
+                          ? showMoreButtonComponent
+                          : loadingIndicatorComponent
 
             }
         }
@@ -268,21 +295,7 @@ Page {
             MenuItem {
                 text: qsTr("Logout")
                 onClicked: {
-                    loadingIndicator.running = true;
-                    controlsPanel.hidePanel();
-                    clearAudioListModel();
-                    controlsPanel.stop();
-                    searchField.text = "";
-                    controlsPanel.albumId = -1;
-                    pageStack.popAttached();
-                    Utils.clearCookies();
-                    Utils.clearCacheDir(cacheDir);
-                    Database.clearLastAccessedDateTable();
-                    Database.setProperty("accessToken", "");
-                    Database.setProperty("userId", "");
-                    accessToken = "";
-                    userId = "";
-                    loadingIndicator.running = false;
+                    remorsePopup.execute(qsTr("You will be logged out"), logout, 3000);
                 }
                 visible: accessToken
             }
@@ -305,20 +318,15 @@ Page {
                 onClicked: {
                     reloadList();
                 }
-                enabled: !loadingIndicator.running
+                enabled: !searchInProgress
             }
 
         }
 
     }
 
-
-
-    BusyIndicator {
-        id: loadingIndicator
-        anchors.centerIn: parent
-        size: BusyIndicatorSize.Large
-        running: false // true
+    RemorsePopup {
+        id: remorsePopup
     }
 
     ListModel{
@@ -340,13 +348,86 @@ Page {
         }
 
         onRowsInserted: {
-            loadingIndicator.running ? loadingIndicator.running = false : null;
+            searchInProgress ? searchInProgress = false : null;
         }
 
-        onCountChanged: {
-            AudioPlayerInfo.listSize = count;
-        }
+    }
 
+    Component {
+        id: loadingIndicatorComponent
+        BusyIndicator {
+            anchors.centerIn: parent
+            size: BusyIndicatorSize.Medium
+            running: searchInProgress
+            height: searchInProgress ? Theme.iconSizeMedium : 0
+        }
+    }
+
+    Component {
+        id: showMoreButtonComponent
+        Button {
+            anchors.centerIn: parent
+            text: qsTr("Show more")
+
+            onClicked: {
+                showMoreButtonVisible = false
+                showMore = true;
+                AudioPlayerHelper.shuffle ? requestRandomSong() : requestMoreSongs();
+            }
+        }
+    }
+
+    Timer {
+        id: waitForPageStack
+        interval: 1000
+        running: false
+        repeat: false
+
+        onTriggered: {
+            console.log("creating albums page")
+            var albumsPage = pageStack.pushAttached(
+                        Qt.resolvedUrl("AlbumsPage.qml")
+                        , {applyAlbumFilter: applyAlbumFilter}
+                        );
+            if (albumsPage.listModel.count === 0){//update album list beforehand for smooth animation
+                albumsPage.reloadAlbumList();
+            } else {
+                albumsPage.setCurrentItemIndex();
+            }
+        }
+    }
+
+    Notification {
+        id: errorNotification
+        category: "error"
+        summary: qsTr("Error occured")
+        onClicked: {
+            console.log("Notification clicked");
+        }
+    }
+
+    Loader {
+        id:notificationLoader//do not change, binded to name in Notification component
+    }
+
+
+
+    Binding {
+        target: AudioPlayerHelper
+        property: "currentIndex"
+        value: listView.currentIndex
+    }
+
+    Binding {
+        target: AudioPlayerHelper
+        property: "listSize"
+        value: listModel.count
+    }
+
+    Binding {
+        target: AudioPlayerHelper
+        property: "downloadPlayListMode"
+        value: downloadPlayListMode
     }
 
     Connections {
@@ -370,43 +451,50 @@ Page {
     }
 
     Connections {
-        target: AudioPlayerInfo
+        target: AudioPlayerHelper
 
-        onCurrentIndexChanged: {
-            console.log("AudioPlayerInfo:onCurrentIndexChanged");
-            if (AudioPlayerInfo.currentIndex === -1){//this is default value
-                //do nothing
-            } else if (AudioPlayerInfo.currentIndex < -1
-                    || AudioPlayerInfo.currentIndex >= listModel.count){//exceded values reassigned to defaultvalue
-                AudioPlayerInfo.currentIndex = -1;
-            } else {
-                listView.currentItem.playThisSong();//autoplay on selecting new song
-                if (AudioPlayerInfo.currentIndex === listModel.count - 1) {//last song is playing
-                    requestMoreSongs();
-                }
+        onPlayNextRequested: {
+            if ((listView.currentIndex === undefined && listModel.count > 0)
+                    || (AudioPlayerHelper.repeat && listView.currentIndex === listModel.count - 1)
+                ){//play first
+                listView.currentIndex = 0;
+                listView.currentItem.playThisSong();
+            } else if (listView.currentIndex < listModel.count - 1){//play next
+                listView.currentIndex++;
+                listView.currentItem.playThisSong();
+//                if (listView.currentIndex === listModel.count - 1) {//last song is playing
+//                    AudioPlayerHelper.shuffle ? requestRandomSong() : requestMoreSongs();
+//                }
+            }
+        }
+
+        onPlayPreviousRequested: {
+            if (listView.currentIndex > 0){//play previous
+                listView.currentIndex--;
+                listView.currentItem.playThisSong();
             }
         }
 
         onFileCached: {
-            console.log("AudioPlayerInfo:onFileCached");
+            console.log("AudioPlayerHelper:onFileCached");
             listModel.setProperty(itemIndex, "cached", true);
             listModel.setProperty(itemIndex, "error", false);
         }
 
         onFileUnCached: {
-            console.log("AudioPlayerInfo:onFileUnCached");
+            console.log("AudioPlayerHelper:onFileUnCached");
             listModel.setProperty(itemIndex, "cached", false);
             listModel.setProperty(itemIndex, "error", false);
         }
 
         onFileError: {
-            console.log("AudioPlayerInfo:onFileError");
+            console.log("AudioPlayerHelper:onFileError");
             listModel.setProperty(itemIndex, "cached", false);
             listModel.setProperty(itemIndex, "error", true);
         }
 
         onFileDeleted: {
-            console.log("AudioPlayerInfo:onFileCached");
+            console.log("AudioPlayerHelper:onFileCached");
             for (var i = 0; i < listModel.count; i++){//remove cached icon
                 if (fileName === Misc.getFileName(listModel.get(i))){
                     listModel.setProperty(i, "cached", false);
@@ -414,39 +502,25 @@ Page {
                 }
             }
         }
-    }
 
-    Notification {
-        id: errorNotification
-        category: "error"
-        summary: qsTr("Error occured")
-        onClicked: {
-            console.log("Notification clicked");
-        }
-    }
+        onShuffleChanged: {
+            console.log("AudioPlayerHelper:onShuffleChanged: shuffle = " + AudioPlayerHelper.shuffle);
+            console.log("AudioPlayerHelper:onShuffleChanged: ignoreChange = " + AudioPlayerHelper.shuffle);
 
-    Loader {
-        id:notificationLoader//do not change, binded to name in Notification component
-    }
+            if (ignoreChange){
+                return;
+            }
 
-
-
-    Timer {
-        id: waitForPageStack
-        interval: 1000
-        running: false
-        repeat: false
-
-        onTriggered: {
-            console.log("creating albums page")
-            var albumsPage = pageStack.pushAttached(
-                        Qt.resolvedUrl("AlbumsPage.qml")
-                        , {applyAlbumFilter: applyAlbumFilter}
-                        );
-            if (albumsPage.listModel.count === 0){//update album list beforehand for smooth animation
-                albumsPage.reloadAlbumList();
-            } else {
-                albumsPage.setCurrentItemIndex();
+            if (AudioPlayerHelper.shuffle) {//shuffle on
+                clearAudioListModel();
+                clearSearchField();
+                controlsPanel.albumId = -2;
+                searchInProgress = true;
+                VKAPI.getCount(musicListPage, accessToken, userId, parseAPIResponse_getCount);
+            } else {//shuffle off
+                clearAudioListModel();
+                controlsPanel.albumId = -1;
+                reloadList();
             }
         }
     }
@@ -465,6 +539,24 @@ Page {
                 controlsPanel.partiallyHide();
             }
         }
+    }
+
+    function logout(){
+        searchInProgress = true;
+        controlsPanel.hidePanel();
+        clearAudioListModel();
+        controlsPanel.stop();
+        searchField.text = "";
+        controlsPanel.albumId = -1;
+        pageStack.popAttached();
+        Utils.clearCookies();
+        Utils.clearCacheDir(cacheDir);
+        Database.clearLastAccessedDateTable();
+        Database.setProperty("accessToken", "");
+        Database.setProperty("userId", "");
+        accessToken = "";
+        userId = "";
+        searchInProgress = false;
     }
 
     function parseAPIResponse_getList(responseText){
@@ -496,7 +588,14 @@ Page {
         }
 
         var items = json.response.items;
+        var count = 0;
+
         for (var i in items) {
+            if (!showMore && items[i].owner_id !== userId){
+                showMoreButtonVisible = true;
+                break;
+            }
+
             var song = {
                 aid: items[i].id
                 , owner_id: items[i].owner_id
@@ -519,7 +618,20 @@ Page {
         if (items.length < _DEFAULT_PAGE_SIZE){
             console.log("reached end of the list");
             endOfAudioList = true;
-            loadingIndicator.running = false;
+        }
+        searchInProgress = false;
+        listChanged = true;
+
+        if (AudioPlayerHelper.shuffle){
+            if (availableNumbers.length > 0){
+                showMoreButtonVisible = true;
+            }
+            if (listModel.count === 1){//first song, autoplay
+                listView.currentIndex = 0;
+                listView.currentItem.playThisSong();
+                requestRandomSong();
+            }
+
         }
     }
 
@@ -532,12 +644,15 @@ Page {
     function reloadList(){
         console.log("reloadList");
 
+        showMore = false;
+        showMoreButtonVisible = false;
+
         if (!searchField.text){
             applySearchFilter();
             return;
         }
 
-        loadingIndicator.running = true;
+        searchInProgress = true;
         clearAudioListModel();
         VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, 0, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text), controlsPanel.albumId);
     }
@@ -545,16 +660,16 @@ Page {
     function requestMoreSongs(){
         console.log("requestMoreSongs");
 
-        if (endOfAudioList){
+        if (searchInProgress || endOfAudioList){
             return;
         }
 
-        loadingIndicator.running = true;
+        searchInProgress = true;
         VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, listModel.count, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text), controlsPanel.albumId);
     }
 
     function handleError(code, message){
-        loadingIndicator.running = false;
+        searchInProgress = false;
 
         errorNotification.body = message;
         errorNotification.publish();
@@ -569,10 +684,8 @@ Page {
 
     function applySearchFilter(){
         console.log("applySearchFilter");
-        loadingIndicator.running = true;
+        searchInProgress = true;
         clearAudioListModel();
-        listChanged = true;
-        AudioPlayerInfo.currentIndex = -1;
         VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, listModel.count, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text), controlsPanel.albumId);
     }
 
@@ -592,9 +705,197 @@ Page {
         controlsPanel.albumTitle = albumTitle;
         controlsPanel.albumId = albumId;
         clearSearchField();
+        AudioPlayerHelper.overrideShuffle(false);
         hideSearch.start();
         applySearchFilter();
     }
+
+    function parseAPIResponse_add(responseText){
+        if (!responseText){
+            console.log("Network access error");
+            handleError(-1, "Network access error");
+            return;
+        }
+
+        if (responseText === VKAPI.TIME_OUT_RESPONSE){
+            console.log("Timeout waiting for server to reply");
+            handleError(-1, "Timeout waiting for server to reply");
+            return;
+        }
+
+        var json;
+        try {
+            json = JSON.parse(responseText);
+        } catch (err) {
+            console.log("Can not parse API response");
+            handleError(-1, "Can not parse API response");
+            return;
+        }
+
+        if (json.error) {//got error
+            console.log("Server reported error: " + json.error.error_msg);
+            handleError(json.error.error_code, "Server reported error: " + json.error.error_msg)
+            return;
+        }
+
+        var newAid = json.response;
+        if (!newAid){
+            console.log("Can not parse API response");
+            handleError(-1, "Can not parse API response");
+            return;
+        }
+
+        listModel.setProperty(index, "aid", newAid);
+        listModel.setProperty(index, "owner_id", userId);
+        //TODO add file rename
+    }
+
+    function parseAPIResponse_remove(responseText){
+        if (!responseText){
+            console.log("Network access error");
+            handleError(-1, "Network access error");
+            return;
+        }
+
+        if (responseText === VKAPI.TIME_OUT_RESPONSE){
+            console.log("Timeout waiting for server to reply");
+            handleError(-1, "Timeout waiting for server to reply");
+            return;
+        }
+
+        var json;
+        try {
+            json = JSON.parse(responseText);
+        } catch (err) {
+            console.log("Can not parse API response");
+            handleError(-1, "Can not parse API response");
+            return;
+        }
+
+        if (json.error) {//got error
+            console.log("Server reported error: " + json.error.error_msg);
+            handleError(json.error.error_code, "Server reported error: " + json.error.error_msg)
+            return;
+        }
+
+        var responseCode = json.response;
+        if (responseCode !== 1){
+            console.log("Can not parse API response");
+            handleError(-1, "Can not parse API response");
+            return;
+        }
+
+        listModel.remove(index);
+    }
+
+    function downloadPlayList(){
+        console.log("downloadPlayList started");
+
+        downloadPlayListMode = !downloadPlayListMode;
+
+        if (downloadPlayListMode){
+            if (listModel.count === 0){
+                downloadPlayListMode = false;
+                return;
+            }
+
+            errorMessage = qsTr("Downloading playlist...");
+            errorCode = 0;
+            flickable.enabled = false;
+            flickable.visible = false;
+            notificationLoader.active = true;
+            notificationLoader.source = "Notification.qml";
+
+            for (var i = 0; i < listModel.count; i++){
+                if (!listModel.get(i).cached){
+                    listView.currentIndex = i;
+                    listView.currentItem.playThisSong();
+                    controlsPanel.showFull();
+                    break;
+                }
+            }
+        } else {
+            errorMessage = qsTr("Downloading playlist stopped");
+            errorCode = 0;
+            flickable.enabled = false;
+            flickable.visible = false;
+            notificationLoader.active = true;
+            notificationLoader.source = "Notification.qml";
+        }
+
+    }
+
+    function parseAPIResponse_getCount(responseText){
+        searchInProgress = false;
+
+        if (!responseText){
+            console.log("Network access error");
+            handleError(-1, "Network access error");
+            return;
+        }
+
+        if (responseText === VKAPI.TIME_OUT_RESPONSE){
+            console.log("Timeout waiting for server to reply");
+            handleError(-1, "Timeout waiting for server to reply");
+            return;
+        }
+
+        var json;
+        try {
+            json = JSON.parse(responseText);
+        } catch (err) {
+            console.log("Can not parse API response");
+            handleError(-1, "Can not parse API response");
+            return;
+        }
+
+        if (json.error) {//got error
+            console.log("Server reported error: " + json.error.error_msg);
+            handleError(json.error.error_code, "Server reported error: " + json.error.error_msg)
+            return;
+        }
+
+        var responseCode = json.response;
+        console.log("total songs count = " + responseCode);
+
+        createShuffleSequence(responseCode);
+        requestRandomSong();
+    }
+
+    function createShuffleSequence(totalCount){
+        console.log("createShuffleSequence: count = " + totalCount);
+
+        availableNumbers = [];
+
+        for (var i = 0; i < totalCount; i++){
+            availableNumbers[i] = i;
+        }
+    }
+
+    function getRandomSongNumber(){
+        console.log("getRandomSongNumber");
+
+        var randomIndex = Math.floor(Math.random() * availableNumbers.length);
+        var num = availableNumbers[randomIndex];
+        availableNumbers.splice(randomIndex, 1);
+
+        console.log("getRandomSongNumber: random song number = " + num);
+
+        return num;
+    }
+
+    function requestRandomSong(){
+        console.log("requestRandomSong");
+
+        if (searchInProgress || availableNumbers.length === 0){
+            return;
+        }
+
+        var songNum = getRandomSongNumber();
+        searchInProgress = true;
+        VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, songNum, 1);
+    }
+
 }
 
 

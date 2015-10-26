@@ -19,12 +19,12 @@
   along with Harbour-vk-music.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef AUDIOPLAYERINFO_H
-#define AUDIOPLAYERINFO_H
+#ifndef AUDIOPLAYERHELPER_H
+#define AUDIOPLAYERHELPER_H
 
 #include <QObject>
 
-class AudioPlayerInfo : public QObject
+class AudioPlayerHelper : public QObject
 {
     Q_OBJECT
     Q_ENUMS(Status)
@@ -33,10 +33,13 @@ class AudioPlayerInfo : public QObject
     Q_PROPERTY(QString artist READ artist WRITE setArtist NOTIFY artistChanged)
     Q_PROPERTY(Status status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(int listSize READ listSize WRITE setListSize NOTIFY listSizeChanged)
+    Q_PROPERTY(bool shuffle READ shuffle WRITE setShuffle NOTIFY shuffleChanged)
+    Q_PROPERTY(bool repeat READ repeat WRITE setRepeat NOTIFY repeatChanged)
+    Q_PROPERTY(bool downloadPlayListMode READ downloadPlayListMode WRITE setDownloadPlayListMode NOTIFY downloadPlayListModeChanged)
 
 public:
-    AudioPlayerInfo(QObject *parent = 0);
-    ~AudioPlayerInfo();
+    AudioPlayerHelper(QObject *parent = 0);
+    ~AudioPlayerHelper();
 
     enum Status {
         Playing
@@ -47,10 +50,12 @@ public:
     Q_INVOKABLE void play();
     Q_INVOKABLE void pause();
     Q_INVOKABLE void playNext();
+    Q_INVOKABLE void playPrevious();
     Q_INVOKABLE void signalFileCached(int itemIndex);
     Q_INVOKABLE void signalFileError(int itemIndex);
     Q_INVOKABLE void signalFileUnCached(int itemIndex);
     Q_INVOKABLE void signalFileDeleted(QString fileName);
+    Q_INVOKABLE void overrideShuffle(bool shuffle);
 
 
     int currentIndex() const {return _currentIndex;}
@@ -68,7 +73,19 @@ public:
     Status status() const {return _status;}
     void setStatus(Status newStatus);
 
+    bool shuffle() const {return _shuffle;}
+    void setShuffle(bool shuffle);
+
+    bool repeat() const {return _repeat;}
+    void setRepeat(bool repeat);
+
+    bool downloadPlayListMode() const {return _downloadPlayListMode;}
+    void setDownloadPlayListMode(bool downloadPlayListMode);
+
 signals:
+    void downloadPlayListModeChanged();
+    void repeatChanged();
+    void shuffleChanged(bool ignoreChange);
     void currentIndexChanged();
     void statusChanged();
     void titleChanged();
@@ -76,6 +93,7 @@ signals:
     void playRequested();
     void pauseRequested();
     void playNextRequested();
+    void playPreviousRequested();
     void listSizeChanged();
     void fileCached(int itemIndex);
     void fileError(int itemIndex);
@@ -88,6 +106,9 @@ private:
     QString _title;
     QString _artist;
     Status _status;
+    bool _shuffle;
+    bool _repeat;
+    bool _downloadPlayListMode;
 };
 
-#endif // AUDIOPLAYERINFO_H
+#endif // AUDIOPLAYERHELPER_H

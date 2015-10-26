@@ -26,15 +26,15 @@
 #include <sailfishapp.h>
 #include "utils.h"
 #include "downloadmanager.h"
-#include "audioplayerinfo.h"
+#include "audioplayerhelper.h"
 
-static QObject *audioplayerinfo_provider(QQmlEngine *engine, QJSEngine *scriptEngine)
+static QObject *audioplayerhelper_provider(QQmlEngine *engine, QJSEngine *scriptEngine)
 {
     Q_UNUSED(engine)
     Q_UNUSED(scriptEngine)
 
-    AudioPlayerInfo *audioplayerinfo = new AudioPlayerInfo();
-    return audioplayerinfo;
+    AudioPlayerHelper *audioplayerhelper = new AudioPlayerHelper();
+    return audioplayerhelper;
 }
 
 int main(int argc, char *argv[])
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 
 
     qmlRegisterType<DownloadManager>("harbour.vk.music.downloadmanager", 1, 0, "DownloadManager");
-    qmlRegisterSingletonType<AudioPlayerInfo>("harbour.vk.music.audioplayerinfo", 1, 0, "AudioPlayerInfo", audioplayerinfo_provider);
+    qmlRegisterSingletonType<AudioPlayerHelper>("harbour.vk.music.audioplayerhelper", 1, 0, "AudioPlayerHelper", audioplayerhelper_provider);
 
     Utils *utils = new Utils();
     view->rootContext()->setContextProperty("Utils", utils);

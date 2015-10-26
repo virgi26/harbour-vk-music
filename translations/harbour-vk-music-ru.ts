@@ -121,6 +121,26 @@
         <source>Error occured</source>
         <translation>Возникла ошибка</translation>
     </message>
+    <message>
+        <source>Show more</source>
+        <translation>Показать еще</translation>
+    </message>
+    <message>
+        <source>You will be logged out</source>
+        <translation>Выход</translation>
+    </message>
+    <message>
+        <source>Downloading playlist...</source>
+        <translation>Режим скачивания плейлиста</translation>
+    </message>
+    <message>
+        <source>Downloading playlist stopped</source>
+        <translation>Режим скачивания плейлиста отключен</translation>
+    </message>
+    <message>
+        <source>Shuffle</source>
+        <translation>Shuffle</translation>
+    </message>
 </context>
 <context>
     <name>Notification</name>

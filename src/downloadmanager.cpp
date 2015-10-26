@@ -57,7 +57,7 @@ void DownloadManager::download(QUrl url, QString fileName, QString localDirPath)
 
     if (_pCurrentReply != NULL)
     {
-        pause();
+        abort();
     }
 
     _URL = url;
@@ -118,6 +118,25 @@ void DownloadManager::pause()
     _nDownloadSize = 0;
 }
 
+void DownloadManager::abort() {
+    qDebug() << "abort()";
+    if (_pCurrentReply == NULL)
+    {
+        return;
+    }
+    _Timer.stop();
+    disconnect(&_Timer, SIGNAL(timeout()), this, SLOT(timeout()));
+    disconnect(_pCurrentReply, SIGNAL(finished()), this, SLOT(finished()));
+    disconnect(_pCurrentReply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(downloadProgress(qint64,qint64)));
+    disconnect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(error(QNetworkReply::NetworkError)));
+
+    _pCurrentReply->abort();
+    _pFile->flush();
+    _pFile->remove();
+    _pCurrentReply = 0;
+    _nDownloadSizeAtPause = 0;
+    _nDownloadSize = 0;
+}
 
 void DownloadManager::resume()
 {

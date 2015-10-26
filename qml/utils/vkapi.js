@@ -26,7 +26,9 @@ var DEFAULT_PAGE_SIZE = 30;
 var DEFAULT_REQUEST_TIMEOUT = 20000;
 var TIME_OUT_RESPONSE = "__TIME_OUT__";
 
-function createAPIRequestWithTimeout(query, callBackFunction, parent){
+function createAPIRequestWithTimeout(query, callBackFunction, parent, asynchronous){
+    asynchronous = (typeof asynchronous !== 'undefined' ? asynchronous : true);
+
     var request = new XMLHttpRequest();
 
     var timer = Qt.createQmlObject(
@@ -48,7 +50,7 @@ function createAPIRequestWithTimeout(query, callBackFunction, parent){
         }
     }
 
-    request.open("GET", query, true);
+    request.open("GET", query, asynchronous);
     request.send();
 }
 
@@ -146,3 +148,19 @@ function getAlbums(parent, accessToken, owner_id, parseAPIResponse_getAlbums, of
 
     createAPIRequestWithTimeout(query, parseAPIResponse_getAlbums, parent);
 }
+
+function getCount(parent, accessToken, owner_id, parseAPIResponse_getCount){
+    console.log("getAlbums started");
+
+    var query = API_SERVER_URL
+        + "/audio.getCount?"
+        + "v=" + API_VERSION
+        + "&access_token=" + accessToken
+        + "&owner_id=" + owner_id
+    ;
+
+    console.log("query = " + query);
+
+    createAPIRequestWithTimeout(query, parseAPIResponse_getCount, parent);
+}
+

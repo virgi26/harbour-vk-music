@@ -23,7 +23,7 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 import QtMultimedia 5.0
 import harbour.vk.music.downloadmanager 1.0
-import harbour.vk.music.audioplayerinfo 1.0
+import harbour.vk.music.audioplayerhelper 1.0
 import "../utils/misc.js" as Misc
 import "../utils/database.js" as DB
 
@@ -46,7 +46,8 @@ DockedPanel {
     property bool userInteraction: false
     property bool partiallyHidden: true
     property string albumTitle
-    property int albumId: -1//default value for My music
+    property int albumId: -1// -1 - My music
+                            // -2 - shuffle on
 
     property alias audioPlayer: audioPlayer
     property alias nextButton: nextButton
@@ -121,21 +122,53 @@ DockedPanel {
 
             visible: !partiallyHidden
 
-            Rectangle {
+            Item {
                 id: spacer
-                height: 1
+                height: parent.height
                 width: (column.width - playButton.width - pauseButton.width - previousButton.width - nextButton.width - 4*Theme.paddingMedium) / 2
-                color: "transparent"
+                IconButton {
+                    id: shuffleButton
+                    anchors {
+                        left: parent.left
+                        top: parent.top
+                        topMargin: -height/3
+                    }
+
+                    icon.source: "image://theme/icon-m-shuffle?" + (AudioPlayerHelper.shuffle ? Theme.highlightColor : Theme.primaryColor)
+                    icon.width: Theme.iconSizeSmall
+                    icon.height: Theme.iconSizeSmall
+
+                    onClicked: {
+                        userInteraction = true;
+                        audioPlayer.stop();
+                        AudioPlayerHelper.shuffle = !AudioPlayerHelper.shuffle;
+                        AudioPlayerHelper.repeat = false;
+                    }
+                }
+                IconButton {
+                    id: repeatButton
+                    anchors {
+                        left: parent.left
+                        bottom: parent.bottom
+                        bottomMargin: -height/3
+                    }
+                    icon.source: "image://theme/icon-m-repeat?" + (AudioPlayerHelper.repeat ? Theme.highlightColor : Theme.primaryColor)
+                    icon.width: Theme.iconSizeSmall
+                    icon.height: Theme.iconSizeSmall
+
+                    onClicked: {
+                        AudioPlayerHelper.repeat = !AudioPlayerHelper.repeat;
+                    }
+                }
+
             }
 
             IconButton {
                 id: previousButton
                 icon.source: "image://theme/icon-m-previous?" + (pressed === Audio.PlayingState ? Theme.highlightColor : Theme.primaryColor)
                 onClicked: {
-                    if (AudioPlayerInfo.currentIndex > 0){
-                        userInteraction = true;
-                        AudioPlayerInfo.currentIndex--;
-                    }
+                    userInteraction = true;
+                    AudioPlayerHelper.playPrevious();
                 }
             }
             IconButton {
@@ -158,10 +191,8 @@ DockedPanel {
                 id: nextButton
                 icon.source: "image://theme/icon-m-next?" + (pressed === Audio.PlayingState ? Theme.highlightColor : Theme.primaryColor)
                 onClicked: {
-                    if (AudioPlayerInfo.currentIndex < AudioPlayerInfo.listSize - 1){
-                        userInteraction = true;
-                        AudioPlayerInfo.currentIndex++;
-                    }
+                    userInteraction = true;
+                    AudioPlayerHelper.playNext();
                 }
             }
         }
@@ -259,7 +290,7 @@ DockedPanel {
                 Utils.deleteFile(cacheDir, Misc.getFileName(song));
                 DB.removeLastAccessedEntry(Misc.getFileName(song));
                 Utils.getFreeSpace(cacheDir);
-                AudioPlayerInfo.signalFileUnCached(AudioPlayerInfo.currentIndex);
+                AudioPlayerHelper.signalFileUnCached(AudioPlayerHelper.currentIndex);
                 controlsPanel.hideCacheIcon();
                 downloadIndicator.clearingCache = false;
             }
@@ -310,24 +341,25 @@ DockedPanel {
 
         onPlaying: {
             userInteraction = false;
-            AudioPlayerInfo.status = AudioPlayerInfo.Playing;
+            AudioPlayerHelper.status = AudioPlayerHelper.Playing;
         }
 
         onPaused: {
             userInteraction = false;
-            AudioPlayerInfo.status = AudioPlayerInfo.Paused;
+            AudioPlayerHelper.status = AudioPlayerHelper.Paused;
         }
 
         onStopped: {
             console.log("playback stopped with userInteraction = " + userInteraction);
-            AudioPlayerInfo.status = AudioPlayerInfo.Paused;
+            AudioPlayerHelper.status = AudioPlayerHelper.Paused;
             songProgress.value = 0;
             bitRateLabel.text = "";
             if (userInteraction){//stopped by user
                 //do nothing
             } else {//end of the song, play next
-                AudioPlayerInfo.currentIndex++;
+                AudioPlayerHelper.playNext();
             }
+            userInteraction = false;
         }
 
     }
@@ -355,17 +387,23 @@ DockedPanel {
 
         onDownloadStarted: {
             console.log("Download Started");
-            AudioPlayerInfo.status = AudioPlayerInfo.Buffering;
+            AudioPlayerHelper.status = AudioPlayerHelper.Buffering;
         }
 
         onDownloadComplete: {
             console.log("Download Complete");
             retryCount = 0;
-            AudioPlayerInfo.signalFileCached(AudioPlayerInfo.currentIndex);
+            AudioPlayerHelper.signalFileCached(AudioPlayerHelper.currentIndex);
             song.cached = true;
             cachedIcon.visible = true;
+
+            if (AudioPlayerHelper.downloadPlayListMode){
+                AudioPlayerHelper.playNext();
+                return;
+            }
+
             audioPlayer.source = filePath;
-            AudioPlayerInfo.status = AudioPlayerInfo.Paused;
+            AudioPlayerHelper.status = AudioPlayerHelper.Paused;
             audioPlayer.play();
             DB.setLastAccessedDate(Misc.getFileName(song));
             Utils.getFreeSpace(cacheDir);
@@ -375,18 +413,16 @@ DockedPanel {
             console.log("Download unsuccessful");
             errorIcon.visible = true;
             song.error = true;
-            AudioPlayerInfo.signalFileError(AudioPlayerInfo.currentIndex);
-//            AudioPlayerInfo.currentIndex++;
+            AudioPlayerHelper.signalFileError(AudioPlayerHelper.currentIndex);
         }
 
         onProgress: {
-            console.log("onProgress: " + nPercentage);
             progressText.text = nPercentage + "%"
         }
     }
 
     Connections {
-        target: AudioPlayerInfo
+        target: AudioPlayerHelper
 
         onPauseRequested: {
             pause();
@@ -396,12 +432,6 @@ DockedPanel {
             play();
         }
 
-        onPlayNextRequested: {
-            if (AudioPlayerInfo.currentIndex < AudioPlayerInfo.listSize - 1){
-                userInteraction = true;
-                AudioPlayerInfo.currentIndex++;
-            }
-        }
     }
 
     Timer {
@@ -414,7 +444,7 @@ DockedPanel {
 
         onTriggered: {
             partiallyHidden = true;
-            if (AudioPlayerInfo.currentIndex !== -1
+            if (AudioPlayerHelper.currentIndex !== -1
                     || song.aid > 0){
                 show();
             }
@@ -430,7 +460,7 @@ DockedPanel {
         running: false
 
         onTriggered: {
-            if (AudioPlayerInfo.currentIndex !== -1
+            if (AudioPlayerHelper.currentIndex !== -1
                     || song.aid > 0){
                 show();
             }
@@ -461,14 +491,20 @@ DockedPanel {
         song = newSong;
         cachedIcon.visible = song.cached;
         errorIcon.visible = false;
-        AudioPlayerInfo.title = song.title;
-        AudioPlayerInfo.artist = song.artist;
+        AudioPlayerHelper.title = song.title;
+        AudioPlayerHelper.artist = song.artist;
         var fileName = Misc.getFileName(song);//no extension
         var filePath = Utils.getFilePath(cacheDir, fileName);
         if (filePath) {
             if (!song.cached){
-                AudioPlayerInfo.signalFileCached(AudioPlayerInfo.currentIndex);
+                AudioPlayerHelper.signalFileCached(AudioPlayerHelper.currentIndex);
             }
+
+            if (AudioPlayerHelper.downloadPlayListMode){
+                AudioPlayerHelper.playNext();
+                return;
+            }
+
             audioPlayer.source = filePath;
             audioPlayer.play();
             DB.setLastAccessedDate(fileName);
@@ -480,7 +516,7 @@ DockedPanel {
                     if (lastAccessedFileName){
                         freeSpaceKBytes += Utils.deleteFile(cacheDir, lastAccessedFileName);//returns size of deleted file
                         DB.removeLastAccessedEntry(lastAccessedFileName);
-                        AudioPlayerInfo.signalFileDeleted(lastAccessedFileName);
+                        AudioPlayerHelper.signalFileDeleted(lastAccessedFileName);
                         console.log("freeSpaceKBytes after delete = " + freeSpaceKBytes);
                     } else {
                         break;
@@ -555,8 +591,8 @@ DockedPanel {
             console.log("wow! song not cached or null");
 
             //maybe we are at index -1? start playing
-            if (AudioPlayerInfo.currentIndex == -1){
-                AudioPlayerInfo.currentIndex++;
+            if (AudioPlayerHelper.currentIndex === -1){
+                AudioPlayerHelper.playNext();
             }
         }
     }

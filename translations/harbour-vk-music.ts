@@ -121,6 +121,26 @@
         <source>Error occured</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Show more</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>You will be logged out</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Downloading playlist...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Downloading playlist stopped</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Shuffle</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Notification</name>

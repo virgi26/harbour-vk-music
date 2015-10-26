@@ -17,7 +17,7 @@ CONFIG += sailfishapp
 SOURCES += src/harbour-vk-music.cpp \
     src/utils.cpp \
     src/downloadmanager.cpp \
-    src/audioplayerinfo.cpp
+    src/audioplayerhelper.cpp \
 
 OTHER_FILES += qml/harbour-vk-music.qml \
     qml/cover/CoverPage.qml \
@@ -59,5 +59,5 @@ TRANSLATIONS += translations/harbour-vk-music-ru.ts
 HEADERS += \
     src/utils.h \
     src/downloadmanager.h \
-    src/audioplayerinfo.h
+    src/audioplayerhelper.h \
 

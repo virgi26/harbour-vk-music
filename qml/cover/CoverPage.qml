@@ -21,7 +21,7 @@
 
 import QtQuick 2.0
 import Sailfish.Silica 1.0
-import harbour.vk.music.audioplayerinfo 1.0
+import harbour.vk.music.audioplayerhelper 1.0
 
 CoverBackground {
     id: cover
@@ -64,7 +64,7 @@ CoverBackground {
 
         Timer {
             running: cover.status === Cover.Active
-                        && AudioPlayerInfo.status === AudioPlayerInfo.Playing
+                        && AudioPlayerHelper.status === AudioPlayerHelper.Playing
             interval: 5000
             repeat: true
             triggeredOnStart: true
@@ -95,20 +95,20 @@ CoverBackground {
         id: coverAction
 
         CoverAction {
-            iconSource: AudioPlayerInfo.status === AudioPlayerInfo.Playing
+            iconSource: AudioPlayerHelper.status === AudioPlayerHelper.Playing
                             ? "image://theme/icon-cover-pause"
                             : "image://theme/icon-cover-play"
             onTriggered: {
-                AudioPlayerInfo.status === AudioPlayerInfo.Playing
-                    ? AudioPlayerInfo.pause()
-                    : AudioPlayerInfo.play()
+                AudioPlayerHelper.status === AudioPlayerHelper.Playing
+                    ? AudioPlayerHelper.pause()
+                    : AudioPlayerHelper.play()
             }
         }
 
         CoverAction {
             iconSource: "image://theme/icon-cover-next-song"
             onTriggered: {
-                AudioPlayerInfo.playNext();
+                AudioPlayerHelper.playNext();
             }
         }
 

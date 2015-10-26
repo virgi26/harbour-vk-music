@@ -47,9 +47,10 @@ Item {
             x: Theme.paddingLarge
             y: Theme.paddingLarge
 
-            color: mouseArea.pressed && mouseArea.containsMouse
-                           ? Theme.rgba(Theme.highlightBackgroundColor, Theme.highlightBackgroundOpacity)
-                           : "transparent"
+//            color: mouseArea.pressed && mouseArea.containsMouse
+//                           ? Theme.rgba(Theme.highlightBackgroundColor, Theme.highlightBackgroundOpacity)
+//                           : "transparent"
+            color: Theme.rgba(Theme.highlightBackgroundColor, Theme.highlightBackgroundOpacity)
             border.color: Theme.highlightColor
             border.width: 2
             radius: 10

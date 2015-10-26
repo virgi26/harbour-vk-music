@@ -18,20 +18,22 @@
   You should have received a copy of the GNU General Public License
   along with Harbour-vk-music.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "audioplayerinfo.h"
+#include "audioplayerhelper.h"
 #include <QDebug>
 
-AudioPlayerInfo::AudioPlayerInfo(QObject *parent):
+AudioPlayerHelper::AudioPlayerHelper(QObject *parent):
     QObject(parent)
     , _currentIndex(-1)
+    , _shuffle(false)
+    , _repeat(false)
 {
 }
 
-AudioPlayerInfo::~AudioPlayerInfo(){
+AudioPlayerHelper::~AudioPlayerHelper(){
 
 }
 
-void AudioPlayerInfo::setCurrentIndex(int newIndex){
+void AudioPlayerHelper::setCurrentIndex(int newIndex){
     if (newIndex == _currentIndex){
         return;
     }
@@ -41,7 +43,7 @@ void AudioPlayerInfo::setCurrentIndex(int newIndex){
     emit currentIndexChanged();
 }
 
-void AudioPlayerInfo::setListSize(int newListSize){
+void AudioPlayerHelper::setListSize(int newListSize){
     if (newListSize == _listSize){
         return;
     }
@@ -51,7 +53,7 @@ void AudioPlayerInfo::setListSize(int newListSize){
     emit listSizeChanged();
 }
 
-void AudioPlayerInfo::setStatus(Status newStatus){
+void AudioPlayerHelper::setStatus(Status newStatus){
     if (newStatus == _status){
         return;
     }
@@ -61,7 +63,7 @@ void AudioPlayerInfo::setStatus(Status newStatus){
     emit statusChanged();
 }
 
-void AudioPlayerInfo::setTitle(QString newTitle){
+void AudioPlayerHelper::setTitle(QString newTitle){
     if (newTitle == _title){
         return;
     }
@@ -71,7 +73,7 @@ void AudioPlayerInfo::setTitle(QString newTitle){
     emit titleChanged();
 }
 
-void AudioPlayerInfo::setArtist(QString newArtist){
+void AudioPlayerHelper::setArtist(QString newArtist){
     if (newArtist == _artist){
         return;
     }
@@ -81,30 +83,66 @@ void AudioPlayerInfo::setArtist(QString newArtist){
     emit artistChanged();
 }
 
-void AudioPlayerInfo::play(){
+void AudioPlayerHelper::setShuffle(bool shuffle){
+    if (shuffle == _shuffle){
+        return;
+    }
+
+    _shuffle = shuffle;
+    emit shuffleChanged(false);
+}
+
+void AudioPlayerHelper::overrideShuffle(bool shuffle){
+    _shuffle = shuffle;
+    emit shuffleChanged(true);
+}
+
+void AudioPlayerHelper::setRepeat(bool repeat){
+    if (repeat == _repeat){
+        return;
+    }
+
+    _repeat = repeat;
+    emit repeatChanged();
+}
+
+void AudioPlayerHelper::setDownloadPlayListMode(bool downloadPlayListMode){
+    if (downloadPlayListMode == _downloadPlayListMode){
+        return;
+    }
+
+    _downloadPlayListMode = downloadPlayListMode;
+    emit downloadPlayListModeChanged();
+}
+
+void AudioPlayerHelper::play(){
     emit playRequested();
 }
 
-void AudioPlayerInfo::pause(){
+void AudioPlayerHelper::pause(){
     emit pauseRequested();
 }
 
-void AudioPlayerInfo::playNext(){
+void AudioPlayerHelper::playNext(){
     emit playNextRequested();
 }
 
-void AudioPlayerInfo::signalFileCached(int itemIndex){
+void AudioPlayerHelper::playPrevious(){
+    emit playPreviousRequested();
+}
+
+void AudioPlayerHelper::signalFileCached(int itemIndex){
     emit fileCached(itemIndex);
 }
 
-void AudioPlayerInfo::signalFileError(int itemIndex){
+void AudioPlayerHelper::signalFileError(int itemIndex){
     emit fileError(itemIndex);
 }
 
-void AudioPlayerInfo::signalFileUnCached(int itemIndex){
+void AudioPlayerHelper::signalFileUnCached(int itemIndex){
     emit fileUnCached(itemIndex);
 }
 
-void AudioPlayerInfo::signalFileDeleted(QString fileName){
+void AudioPlayerHelper::signalFileDeleted(QString fileName){
     emit fileDeleted(fileName);
 }

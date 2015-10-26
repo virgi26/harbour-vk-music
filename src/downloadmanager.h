@@ -52,6 +52,7 @@ signals:
 public slots:
     void download(QUrl url, QString fileName, QString localDirPath);
     void pause();
+    void abort();
     void resume();
 
 private slots:

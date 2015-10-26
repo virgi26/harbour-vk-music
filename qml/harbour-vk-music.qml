@@ -38,7 +38,7 @@ ApplicationWindow
     property bool humanFriendlyFileNames: false
     property bool enableBitRate: Database.getProperty("enableBitRate")
 
-    readonly property int _DEFAULT_PAGE_SIZE: (Screen.sizeCategory >= Screen.Large) ? 60 : 30
+    readonly property int _DEFAULT_PAGE_SIZE: (Screen.sizeCategory >= Screen.Large) ? 100 : 50
 
     property alias controlsPanel: controlsPanel
 

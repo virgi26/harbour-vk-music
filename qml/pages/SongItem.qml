@@ -21,7 +21,7 @@
 
 import QtQuick 2.0
 import Sailfish.Silica 1.0
-import harbour.vk.music.audioplayerinfo 1.0
+import harbour.vk.music.audioplayerhelper 1.0
 import "../utils/vkapi.js" as VKAPI
 import "../utils/database.js" as DB
 import "../utils/misc.js" as Misc
@@ -115,7 +115,7 @@ ListItem {
                     remorse.execute(
                                 songItem
                                 , qsTr("Deleting")
-                                , remorseFunction
+                                , removeAudio
                                 , 3000
                                 )
                 }
@@ -142,12 +142,13 @@ ListItem {
         console.log("ListItem:onClicked");
         highlight.start();
         controlsPanel.userInteraction = true;
-        AudioPlayerInfo.currentIndex = index;
+        listView.currentIndex = index;
+        playThisSong();
         controlsPanel.showFull();
     }
 
 
-    function remorseFunction(){
+    function removeAudio(){
         VKAPI.removeAudio(songItem, accessToken, aid, owner_id, parseAPIResponse_remove);
     }
 
@@ -169,83 +170,14 @@ ListItem {
             , cached: cached
             , error: error
         });
+
+        if (index === listModel.count - 1){//last song is playing
+            if (AudioPlayerHelper.shuffle){
+                requestRandomSong();
+            } else {
+                requestMoreSongs();
+            }
+        }
     }
 
-    function parseAPIResponse_add(responseText){
-        if (!responseText){
-            console.log("Network access error");
-            handleError(-1, "Network access error");
-            return;
-        }
-
-        if (responseText === VKAPI.TIME_OUT_RESPONSE){
-            console.log("Timeout waiting for server to reply");
-            handleError(-1, "Timeout waiting for server to reply");
-            return;
-        }
-
-        var json;
-        try {
-            json = JSON.parse(responseText);
-        } catch (err) {
-            console.log("Can not parse API response");
-            handleError(-1, "Can not parse API response");
-            return;
-        }
-
-        if (json.error) {//got error
-            console.log("Server reported error: " + json.error.error_msg);
-            handleError(json.error.error_code, "Server reported error: " + json.error.error_msg)
-            return;
-        }
-
-        var newAid = json.response;
-        if (!newAid){
-            console.log("Can not parse API response");
-            handleError(-1, "Can not parse API response");
-            return;
-        }
-
-        listModel.setProperty(index, "aid", newAid);
-        listModel.setProperty(index, "owner_id", userId);
-        //TODO add file rename
-    }
-
-    function parseAPIResponse_remove(responseText){
-        if (!responseText){
-            console.log("Network access error");
-            handleError(-1, "Network access error");
-            return;
-        }
-
-        if (responseText === VKAPI.TIME_OUT_RESPONSE){
-            console.log("Timeout waiting for server to reply");
-            handleError(-1, "Timeout waiting for server to reply");
-            return;
-        }
-
-        var json;
-        try {
-            json = JSON.parse(responseText);
-        } catch (err) {
-            console.log("Can not parse API response");
-            handleError(-1, "Can not parse API response");
-            return;
-        }
-
-        if (json.error) {//got error
-            console.log("Server reported error: " + json.error.error_msg);
-            handleError(json.error.error_code, "Server reported error: " + json.error.error_msg)
-            return;
-        }
-
-        var responseCode = json.response;
-        if (responseCode !== 1){
-            console.log("Can not parse API response");
-            handleError(-1, "Can not parse API response");
-            return;
-        }
-
-        listModel.remove(index);
-    }
 }
