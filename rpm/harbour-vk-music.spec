@@ -13,7 +13,7 @@ Name:       harbour-vk-music
 %{!?qtc_make:%define qtc_make make}
 %{?qtc_builddir:%define _builddir %qtc_builddir}
 Summary:    harbour-vk-music
-Version:    0.9
+Version:    0.10
 Release:    1
 Group:      Qt/Qt
 License:    LICENSE

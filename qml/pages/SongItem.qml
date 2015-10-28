@@ -143,7 +143,7 @@ ListItem {
         highlight.start();
         controlsPanel.userInteraction = true;
         listView.currentIndex = index;
-        playThisSong();
+        loadThisSong();
         controlsPanel.showFull();
     }
 
@@ -152,32 +152,117 @@ ListItem {
         VKAPI.removeAudio(songItem, accessToken, aid, owner_id, parseAPIResponse_remove);
     }
 
-    function playThisSong(){
-        console.log("playThisSong: " + aid);
+    function loadThisSong(autoPlay){
+        console.log("loadThisSong: " + aid);
         controlsPanel.stop();
 
-        controlsPanel.playSong({
-            aid: aid
-            , owner_id: owner_id
-            , artist: artist
-            , title: title
-            , duration: duration
-            , date: date
-            , url: url
-            , lyrics_id: lyrics_id
-            , album_id: album_id
-            , genre_id: genre_id
-            , cached: cached
-            , error: error
-        });
+        controlsPanel.loadSong({
+                                    aid: aid
+                                    , owner_id: owner_id
+                                    , artist: artist
+                                    , title: title
+                                    , duration: duration
+                                    , date: date
+                                    , url: url
+                                    , lyrics_id: lyrics_id
+                                    , album_id: album_id
+                                    , genre_id: genre_id
+                                    , cached: cached
+                                    , error: error
+                                }
+                               , autoPlay);
 
         if (index === listModel.count - 1){//last song is playing
             if (AudioPlayerHelper.shuffle){
-                requestRandomSong();
+                requestMoreRandomSongs(_DEFAULT_RANDOM_SONGS_COUNT);
             } else {
                 requestMoreSongs();
             }
         }
     }
+
+
+    function parseAPIResponse_add(responseText){
+        if (!responseText){
+            console.log("Network access error");
+            handleError(-1, "Network access error");
+            return;
+        }
+
+        if (responseText === VKAPI.TIME_OUT_RESPONSE){
+            console.log("Timeout waiting for server to reply");
+            handleError(-1, "Timeout waiting for server to reply");
+            return;
+        }
+
+        var json;
+        try {
+            json = JSON.parse(responseText);
+        } catch (err) {
+            console.log("Can not parse API response");
+            handleError(-1, "Can not parse API response");
+            return;
+        }
+
+        if (json.error) {//got error
+            console.log("Server reported error: " + json.error.error_msg);
+            handleError(json.error.error_code, "Server reported error: " + json.error.error_msg)
+            return;
+        }
+
+        var newAid = json.response;
+        if (!newAid){
+            console.log("Can not parse API response");
+            handleError(-1, "Can not parse API response");
+            return;
+        }
+
+        listModel.setProperty(index, "aid", newAid);
+        listModel.setProperty(index, "owner_id", userId);
+        //TODO add file rename
+    }
+
+    function parseAPIResponse_remove(responseText){
+        if (!responseText){
+            console.log("Network access error");
+            handleError(-1, "Network access error");
+            return;
+        }
+
+        if (responseText === VKAPI.TIME_OUT_RESPONSE){
+            console.log("Timeout waiting for server to reply");
+            handleError(-1, "Timeout waiting for server to reply");
+            return;
+        }
+
+        var json;
+        try {
+            json = JSON.parse(responseText);
+        } catch (err) {
+            console.log("Can not parse API response");
+            handleError(-1, "Can not parse API response");
+            return;
+        }
+
+        if (json.error) {//got error
+            console.log("Server reported error: " + json.error.error_msg);
+            handleError(json.error.error_code, "Server reported error: " + json.error.error_msg)
+            return;
+        }
+
+        var responseCode = json.response;
+        if (responseCode !== 1){
+            console.log("Can not parse API response");
+            handleError(-1, "Can not parse API response");
+            return;
+        }
+
+        var i = index;
+        if (listView.currentIndex === i){
+            listView.currentIndex = i + 1;
+        }
+        listModel.remove(i);
+    }
+
 
 }

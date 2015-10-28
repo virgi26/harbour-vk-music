@@ -39,6 +39,7 @@ ApplicationWindow
     property bool enableBitRate: Database.getProperty("enableBitRate")
 
     readonly property int _DEFAULT_PAGE_SIZE: (Screen.sizeCategory >= Screen.Large) ? 100 : 50
+    readonly property int _DEFAULT_RANDOM_SONGS_COUNT: 5
 
     property alias controlsPanel: controlsPanel
 

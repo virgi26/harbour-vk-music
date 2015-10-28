@@ -44,7 +44,6 @@ DockedPanel {
         ; cached: false
     }
     property bool userInteraction: false
-    property bool partiallyHidden: true
     property string albumTitle
     property int albumId: -1// -1 - My music
                             // -2 - shuffle on
@@ -54,8 +53,19 @@ DockedPanel {
     property alias previousButton: previousButton
     property alias sliderHeight: songProgress.height
 
+    property bool _partiallyHidden: true
+    property bool _autoPlayAfterDownload: true
+
     height: column.height
-    width: parent.width
+//    width: parent.width
+    width: {
+        switch (screen.sizeCategory){
+                case (Screen.Large): return Screen.width/2;
+                case (Screen.ExtraLarge): return Screen.width/3;
+                default: return Screen.width;
+        }
+    }
+    anchors.horizontalCenter: parent.horizontalCenter
 
     opacity: Qt.inputMethod.visible ? 0.0 : 1.0
     Behavior on opacity { FadeAnimator {}}
@@ -66,61 +76,59 @@ DockedPanel {
         id: column
 
         width: parent.width
-        spacing: partiallyHidden ? 0 : Theme.paddingMedium
+        spacing: _partiallyHidden ? 0 : Theme.paddingMedium
 
-        Rectangle {
-            id: topSpacer
-            visible: !partiallyHidden
-            height: Theme.paddingSmall
-            width: 1
-            color: "transparent"
-        }
-
-        Label {
-            id: artistLabel
-
-            visible: !partiallyHidden
-
-            text: {
-                song.artist ? song.artist : ""
-            }
-            font.pixelSize: Theme.fontSizeMedium
-            truncationMode: TruncationMode.Fade
-            x: Theme.horizontalPageMargin
-            width: parent.width - 2*Theme.paddingLarge
-            color: Theme.highlightColor
+        Separator {
+            anchors.leftMargin: Theme.horizontalPageMargin
+            width: parent.width - Theme.horizontalPageMargin
+            visible: !_partiallyHidden
         }
 
         ScrollingLabel {
             id: titleLabel
 
-            visible: !partiallyHidden
-
             anchors {
                 left: parent.left
                 right: parent.right
+                leftMargin: Theme.horizontalPageMargin
+                rightMargin: Theme.horizontalPageMargin
+                topMargin: Theme.paddingSmall
             }
 
             text: {
-                song.title ? song.title : ""
+                song.artist
+                ? (song.artist
+                    + (song.title
+                        ? " - " + song.title
+                        : ""))
+                : (song.title
+                    ? song.title
+                    : "")
             }
+            visible: !_partiallyHidden
             font.pixelSize: Theme.fontSizeMedium
-            textOffset: Theme.horizontalPageMargin
-            color: Theme.secondaryHighlightColor
+            color: Theme.highlightColor
+            horizontalAlignment: Text.AlignHCenter
 
             onTextChanged: {
-                if (controlsPanel.open && !controlsPanel.partiallyHidden){
+                if (controlsPanel.open && !controlsPanel._partiallyHidden){
                     titleLabel.stopAnimation();
                     titleLabel.startAnimation();
                 }
             }
         }
 
+        Separator {
+            anchors.leftMargin: Theme.horizontalPageMargin
+            width: parent.width - Theme.horizontalPageMargin
+            visible: !_partiallyHidden
+        }
+
         Row {
             id: buttons
             spacing: Theme.paddingMedium
 
-            visible: !partiallyHidden
+            visible: !_partiallyHidden
 
             Item {
                 id: spacer
@@ -129,7 +137,8 @@ DockedPanel {
                 IconButton {
                     id: shuffleButton
                     anchors {
-                        left: parent.left
+                        right: parent.right
+                        rightMargin: -Theme.paddingMedium
                         top: parent.top
                         topMargin: -height/3
                     }
@@ -148,13 +157,16 @@ DockedPanel {
                 IconButton {
                     id: repeatButton
                     anchors {
-                        left: parent.left
+                        right: parent.right
+                        rightMargin: -Theme.paddingMedium
                         bottom: parent.bottom
                         bottomMargin: -height/3
                     }
                     icon.source: "image://theme/icon-m-repeat?" + (AudioPlayerHelper.repeat ? Theme.highlightColor : Theme.primaryColor)
                     icon.width: Theme.iconSizeSmall
                     icon.height: Theme.iconSizeSmall
+
+                    enabled: !AudioPlayerHelper.shuffle
 
                     onClicked: {
                         AudioPlayerHelper.repeat = !AudioPlayerHelper.repeat;
@@ -197,17 +209,26 @@ DockedPanel {
             }
         }
 
+        Separator {
+            anchors.leftMargin: Theme.horizontalPageMargin
+            width: parent.width - Theme.horizontalPageMargin
+            visible: !_partiallyHidden
+        }
+
         Slider {
             id: songProgress
 
             width: parent.width
+            leftMargin: Theme.horizontalPageMargin
+            rightMargin: Theme.horizontalPageMargin
+            implicitHeight: valueText !== "" ? Theme.itemSizeLarge : label !== "" ? Theme.itemSizeMedium : Theme.itemSizeSmall
 
             visible: open && (song.aid > 0)
 
             minimumValue: 0
             maximumValue: song.duration ? song.duration : 0
             value: 0
-            valueText: partiallyHidden ?
+            valueText: _partiallyHidden ?
                             ""
                             : Format.formatDuration(
                                    songProgress.value
@@ -220,10 +241,10 @@ DockedPanel {
                                 )
             enabled: (audioPlayer.status === Audio.Loaded
                             || audioPlayer.status === Audio.Buffered)
-                        && !partiallyHidden
+                        && !_partiallyHidden
                         && !song.error
 
-            label: partiallyHidden
+            label: _partiallyHidden
                    ? (song.artist
                       ? (song.artist
                          + (song.title
@@ -245,13 +266,14 @@ DockedPanel {
         anchors {
             right: column.right
             top: column.top
-            topMargin: buttons.y + (buttons.height - downloadIndicator.height)/2
+            topMargin: buttons.y + Math.abs(downloadIndicator.height - buttons.height)/2
             rightMargin: Theme.paddingSmall
         }
 
         height: downloadIndicator.height
         width: downloadIndicator.width
 
+        visible: !_partiallyHidden
 
         BusyIndicator {
             id: downloadIndicator
@@ -315,7 +337,7 @@ DockedPanel {
         anchors.leftMargin: Theme.paddingSmall
         anchors.bottom: column.bottom
 
-        visible: !partiallyHidden && enableBitRate
+        visible: !_partiallyHidden && enableBitRate
 
         font.pixelSize: Theme.fontSizeExtraSmall
     }
@@ -369,7 +391,7 @@ DockedPanel {
 
         anchors.fill: parent
 
-        enabled: partiallyHidden
+        enabled: _partiallyHidden
 
         onClicked: {
             console.log("dockPanelMouseArea:onClicked")
@@ -404,7 +426,10 @@ DockedPanel {
 
             audioPlayer.source = filePath;
             AudioPlayerHelper.status = AudioPlayerHelper.Paused;
-            audioPlayer.play();
+            if (_autoPlayAfterDownload){
+                audioPlayer.play();
+            }
+            _autoPlayAfterDownload = true;//setting to default value
             DB.setLastAccessedDate(Misc.getFileName(song));
             Utils.getFreeSpace(cacheDir);
         }
@@ -443,7 +468,7 @@ DockedPanel {
         running: false
 
         onTriggered: {
-            partiallyHidden = true;
+            _partiallyHidden = true;
             if (AudioPlayerHelper.currentIndex !== -1
                     || song.aid > 0){
                 show();
@@ -487,7 +512,9 @@ DockedPanel {
 
     }
 
-    function playSong(newSong){
+    function loadSong(newSong, autoPlay){
+        autoPlay = (typeof autoPlay !== 'undefined' ? autoPlay : true);
+
         song = newSong;
         cachedIcon.visible = song.cached;
         errorIcon.visible = false;
@@ -506,7 +533,9 @@ DockedPanel {
             }
 
             audioPlayer.source = filePath;
-            audioPlayer.play();
+            if (autoPlay){
+                audioPlayer.play();
+            }
             DB.setLastAccessedDate(fileName);
         } else {//check free space before download
             if (freeSpaceKBytes < minimumFreeSpaceKBytes){
@@ -525,9 +554,12 @@ DockedPanel {
             }
             if (freeSpaceKBytes < minimumFreeSpaceKBytes){//still? play from web
                 audioPlayer.source = song.url;
-                audioPlayer.play();
+                if (autoPlay){
+                    audioPlayer.play();
+                }
                 Utils.getFreeSpace(cacheDir);
             } else {//free space ok, download
+                _autoPlayAfterDownload = autoPlay;
                 downloadManager.download(song.url, fileName, cacheDir);
             }
         }
@@ -535,13 +567,19 @@ DockedPanel {
 
     function partiallyHide(){
         console.log("partiallyHide");
+
+        if (screen.sizeCategory > Screen.Medium){//do not hide
+            showFull();
+            return;
+        }
+
         titleLabel.stopAnimation();
 
         if (!applicationWindow.applicationActive){
             return;
         }
 
-        if (!partiallyHidden
+        if (!_partiallyHidden
                 || !open){
             controlsPanel.hide(true);
             waitForDockerCloseAnimationAndOpenTimer.start();
@@ -557,7 +595,7 @@ DockedPanel {
         }
 
         hide();
-        partiallyHidden = true;
+        _partiallyHidden = true;
     }
 
     function showFull(){
@@ -567,7 +605,7 @@ DockedPanel {
             return;
         }
 
-        partiallyHidden = false;
+        _partiallyHidden = false;
 
         if (!controlsPanel.open){
             waitForKeyboardCloseAnimationAndOpenTimer.start();

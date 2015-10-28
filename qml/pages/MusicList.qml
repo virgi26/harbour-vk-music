@@ -35,14 +35,17 @@ Page {
 
     property string errorMessage
     property int errorCode
-    property bool searchShown: false
-    property bool listChanged: false
-    property bool endOfAudioList: false
-    property bool searchInProgress: false
-    property bool showMoreButtonVisible: false
-    property bool showMore: false
     property bool downloadPlayListMode: false
-    property var availableNumbers: []//contains song numbers available for shuffle
+
+    property bool _searchShown: false
+    property bool _listChanged: false
+    property bool _endOfAudioList: false
+    property bool _searchInProgress: false
+    property bool _showMoreButtonVisible: false
+    property bool _showMore: false
+    property var _availableNumbers: []//contains song numbers available for shuffle
+    property int _needMoreRandomSongsCount: 0
+    property bool _justLoaded: false//used to redirect next button behaviour to play first song after list refresh
 
     property alias listView: listView
     property alias listModel: listModel
@@ -81,7 +84,7 @@ Page {
                     header.visible = false
                     clearSearchIcon.visible = true
                     searchField.forceActiveFocus();
-                    searchShown = true;
+                    _searchShown = true;
                 }
             }
 
@@ -105,7 +108,7 @@ Page {
                     searchField.visible = false;
                     searchField.color = "transparent"
                     flickable.forceActiveFocus();//for caret to disappear
-                    searchShown = false;
+                    _searchShown = false;
                 }
             }
         }
@@ -124,6 +127,8 @@ Page {
             anchors.left: magicalDivider.right
 
             width: (parent.width - magicalDivider.width)
+
+            visible: accessToken
 
             MouseArea {
                 id: headerMouseArea
@@ -167,9 +172,9 @@ Page {
             icon.source: "image://theme/icon-m-search"
 
             onClicked: {
-                if (!searchShown){
+                if (!_searchShown){
                     showSearch.start();
-                    listChanged = false;
+                    _listChanged = false;
                 } else {
                     flickable.forceActiveFocus();
                     reloadList();
@@ -189,10 +194,10 @@ Page {
             visible: false
 
             onClicked: {
-                if (searchShown){
+                if (_searchShown){
                     searchField.text = "";
                     hideSearch.start();
-                    if (listChanged){
+                    if (_listChanged){
                         reloadList();
                     }
                 }
@@ -272,12 +277,12 @@ Page {
                 }
 
                 onMovementEnded: {
-                    if (!searchInProgress && !endOfAudioList && (contentHeight - contentY - height < 500*Theme.pixelRatio)){
+                    if (!_searchInProgress && !_endOfAudioList && (contentHeight - contentY - height < 500*Theme.pixelRatio)){
                         requestMoreSongs();
                     }
                 }
 
-                footer: showMoreButtonVisible
+                footer: _showMoreButtonVisible
                           ? showMoreButtonComponent
                           : loadingIndicatorComponent
 
@@ -316,13 +321,25 @@ Page {
             MenuItem {
                 text: qsTr("Refresh")
                 onClicked: {
-                    reloadList();
+                    wiseReload();
                 }
-                enabled: !searchInProgress
+                enabled: !_searchInProgress && accessToken
             }
 
         }
 
+    }
+
+    Label {
+        id: pleaseLoginLabel
+
+        anchors.centerIn: parent
+
+        width: parent.width - 2*Theme.paddingSmall
+        text: qsTr("Please login")
+        horizontalAlignment: Text.AlignHCenter
+        font.pixelSize: Theme.fontSizeLarge
+        visible: !accessToken
     }
 
     RemorsePopup {
@@ -348,7 +365,7 @@ Page {
         }
 
         onRowsInserted: {
-            searchInProgress ? searchInProgress = false : null;
+            _searchInProgress ? _searchInProgress = false : null;
         }
 
     }
@@ -358,8 +375,8 @@ Page {
         BusyIndicator {
             anchors.centerIn: parent
             size: BusyIndicatorSize.Medium
-            running: searchInProgress
-            height: searchInProgress ? Theme.iconSizeMedium : 0
+            running: _searchInProgress
+            height: _searchInProgress ? Theme.iconSizeMedium : 0
         }
     }
 
@@ -370,9 +387,9 @@ Page {
             text: qsTr("Show more")
 
             onClicked: {
-                showMoreButtonVisible = false
-                showMore = true;
-                AudioPlayerHelper.shuffle ? requestRandomSong() : requestMoreSongs();
+                _showMoreButtonVisible = false
+                _showMore = true;
+                AudioPlayerHelper.shuffle ? requestMoreRandomSongs(_DEFAULT_RANDOM_SONGS_COUNT) : requestMoreSongs();
             }
         }
     }
@@ -453,25 +470,28 @@ Page {
     Connections {
         target: AudioPlayerHelper
 
+        onStatusChanged: {
+            _justLoaded = false;
+        }
+
         onPlayNextRequested: {
+            controlsPanel.userInteraction = true;//magic
             if ((listView.currentIndex === undefined && listModel.count > 0)
+                    || (_justLoaded && listModel.count > 0)
                     || (AudioPlayerHelper.repeat && listView.currentIndex === listModel.count - 1)
                 ){//play first
                 listView.currentIndex = 0;
-                listView.currentItem.playThisSong();
+                listView.currentItem.loadThisSong();
             } else if (listView.currentIndex < listModel.count - 1){//play next
                 listView.currentIndex++;
-                listView.currentItem.playThisSong();
-//                if (listView.currentIndex === listModel.count - 1) {//last song is playing
-//                    AudioPlayerHelper.shuffle ? requestRandomSong() : requestMoreSongs();
-//                }
+                listView.currentItem.loadThisSong();
             }
         }
 
         onPlayPreviousRequested: {
             if (listView.currentIndex > 0){//play previous
                 listView.currentIndex--;
-                listView.currentItem.playThisSong();
+                listView.currentItem.loadThisSong();
             }
         }
 
@@ -505,23 +525,13 @@ Page {
 
         onShuffleChanged: {
             console.log("AudioPlayerHelper:onShuffleChanged: shuffle = " + AudioPlayerHelper.shuffle);
-            console.log("AudioPlayerHelper:onShuffleChanged: ignoreChange = " + AudioPlayerHelper.shuffle);
+            console.log("AudioPlayerHelper:onShuffleChanged: ignoreChange = " + ignoreChange);
 
             if (ignoreChange){
                 return;
             }
 
-            if (AudioPlayerHelper.shuffle) {//shuffle on
-                clearAudioListModel();
-                clearSearchField();
-                controlsPanel.albumId = -2;
-                searchInProgress = true;
-                VKAPI.getCount(musicListPage, accessToken, userId, parseAPIResponse_getCount);
-            } else {//shuffle off
-                clearAudioListModel();
-                controlsPanel.albumId = -1;
-                reloadList();
-            }
+            wiseReload();
         }
     }
 
@@ -541,8 +551,25 @@ Page {
         }
     }
 
+    function wiseReload(){
+        if (AudioPlayerHelper.shuffle) {//shuffle on
+            if (searchField.visible){
+                hideSearch.start();
+            }
+            clearAudioListModel();
+            clearSearchField();
+            controlsPanel.albumId = -2;
+            _searchInProgress = true;
+            VKAPI.getCount(musicListPage, accessToken, userId, parseAPIResponse_getCount);
+        } else {//shuffle off
+            clearAudioListModel();
+            controlsPanel.albumId = -1;
+            reloadList();
+        }
+    }
+
     function logout(){
-        searchInProgress = true;
+        _searchInProgress = true;
         controlsPanel.hidePanel();
         clearAudioListModel();
         controlsPanel.stop();
@@ -556,82 +583,105 @@ Page {
         Database.setProperty("userId", "");
         accessToken = "";
         userId = "";
-        searchInProgress = false;
+        _searchInProgress = false;
     }
 
     function parseAPIResponse_getList(responseText){
-        if (!responseText){
-            console.log("Network access error");
-            handleError(-1, "Network access error");
-            return;
-        }
-
-        if (responseText === VKAPI.TIME_OUT_RESPONSE){
-            console.log("Timeout waiting for server to reply");
-            handleError(-1, "Timeout waiting for server to reply");
-            return;
-        }
-
-        var json;
         try {
-            json = JSON.parse(responseText);
-        } catch (err) {
-            console.log("Can not parse API response");
-            handleError(-1, "Can not parse API response");
-            return;
-        }
-
-        if (json.error) {//got error
-            console.log("Server reported error: " + json.error.error_msg);
-            handleError(json.error.error_code, "Server reported error: " + json.error.error_msg)
-            return;
-        }
-
-        var items = json.response.items;
-        var count = 0;
-
-        for (var i in items) {
-            if (!showMore && items[i].owner_id !== userId){
-                showMoreButtonVisible = true;
-                break;
+            if (!responseText){
+                console.log("Network access error");
+                handleError(-1, "Network access error");
+                return;
             }
 
-            var song = {
-                aid: items[i].id
-                , owner_id: items[i].owner_id
-                , artist: items[i].artist
-                , title: items[i].title
-                , duration: items[i].duration
-                , date: items[i].date
-                , url: items[i].url
-                , lyrics_id: items[i].lyrics_id
-                , album_id: items[i].album_id
-                , genre_id: items[i].genre_id
-                , error: false
-            };
-            //check for cached file
-            var filePath = Utils.getFilePath(cacheDir, Misc.getFileName(song));
-            song.cached = filePath ? true : false;
-
-            listModel.append(song);
-        }
-        if (items.length < _DEFAULT_PAGE_SIZE){
-            console.log("reached end of the list");
-            endOfAudioList = true;
-        }
-        searchInProgress = false;
-        listChanged = true;
-
-        if (AudioPlayerHelper.shuffle){
-            if (availableNumbers.length > 0){
-                showMoreButtonVisible = true;
+            if (responseText === VKAPI.TIME_OUT_RESPONSE){
+                console.log("Timeout waiting for server to reply");
+                handleError(-1, "Timeout waiting for server to reply");
+                return;
             }
-            if (listModel.count === 1){//first song, autoplay
+
+            var json;
+            try {
+                json = JSON.parse(responseText);
+            } catch (err) {
+                console.log("Can not parse API response");
+                handleError(-1, "Can not parse API response");
+                return;
+            }
+
+            if (json.error) {//got error
+                console.log("Server reported error: " + json.error.error_msg);
+                handleError(json.error.error_code, "Server reported error: " + json.error.error_msg)
+                return;
+            }
+
+            var items = json.response.items;
+            var count = 0;
+
+            if (listModel.count === 0) {
+                _justLoaded = true;
+            }
+
+            for (var i in items) {
+                if (!_showMore && items[i].owner_id !== userId){
+                    _showMoreButtonVisible = true;
+                    break;
+                }
+
+                var song = {
+                    aid: items[i].id
+                    , owner_id: items[i].owner_id
+                    , artist: items[i].artist
+                    , title: items[i].title
+                    , duration: items[i].duration
+                    , date: items[i].date
+                    , url: items[i].url
+                    , lyrics_id: items[i].lyrics_id
+                    , album_id: items[i].album_id
+                    , genre_id: items[i].genre_id
+                    , error: false
+                };
+                //check for cached file
+                var filePath = Utils.getFilePath(cacheDir, Misc.getFileName(song));
+                song.cached = filePath ? true : false;
+
+                listModel.append(song);
+                _listChanged = true;
+            }
+            console.log("added " + items.length + " songs to playlist");
+            if (items.length < _DEFAULT_PAGE_SIZE && _showMore){
+                console.log("reached end of the list");
+                _endOfAudioList = true;
+            }
+
+        } finally {
+            _searchInProgress = false;
+
+            if (AudioPlayerHelper.shuffle){
+                if (listModel.count === 1){//first song, autoplay
+                    listView.currentIndex = 0;
+                    listView.currentItem.loadThisSong();
+                    if (_needMoreRandomSongsCount === 0){//request one more song
+                        requestRandomSong();
+                    }
+                }
+                if (_availableNumbers.length > 0){
+                    if (_needMoreRandomSongsCount > 0){
+                        requestRandomSong();
+                    } else {
+                        _showMoreButtonVisible = true;
+                    }
+                }
+
+            }
+
+            if (!controlsPanel.song && listModel.count > 0){
                 listView.currentIndex = 0;
-                listView.currentItem.playThisSong();
-                requestRandomSong();
+                listView.currentItem.loadThisSong(false);
             }
-
+            if (!controlsPanel.open){
+                controlsPanel.showFull();
+            }
         }
     }
 
@@ -644,15 +694,15 @@ Page {
     function reloadList(){
         console.log("reloadList");
 
-        showMore = false;
-        showMoreButtonVisible = false;
+        _showMore = false;
+        _showMoreButtonVisible = false;
 
         if (!searchField.text){
             applySearchFilter();
             return;
         }
 
-        searchInProgress = true;
+        _searchInProgress = true;
         clearAudioListModel();
         VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, 0, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text), controlsPanel.albumId);
     }
@@ -660,16 +710,16 @@ Page {
     function requestMoreSongs(){
         console.log("requestMoreSongs");
 
-        if (searchInProgress || endOfAudioList){
+        if (_searchInProgress || _endOfAudioList){
             return;
         }
 
-        searchInProgress = true;
+        _searchInProgress = true;
         VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, listModel.count, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text), controlsPanel.albumId);
     }
 
     function handleError(code, message){
-        searchInProgress = false;
+        _searchInProgress = false;
 
         errorNotification.body = message;
         errorNotification.publish();
@@ -684,14 +734,14 @@ Page {
 
     function applySearchFilter(){
         console.log("applySearchFilter");
-        searchInProgress = true;
+        _searchInProgress = true;
         clearAudioListModel();
         VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, listModel.count, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text), controlsPanel.albumId);
     }
 
     function clearAudioListModel(){
         console.log("clearListModel");
-        endOfAudioList = false;
+        _endOfAudioList = false;
         listView.displaced = null;
         listModel.clear();
         listView.displaced = listViewDisplacedAnimation;
@@ -708,84 +758,6 @@ Page {
         AudioPlayerHelper.overrideShuffle(false);
         hideSearch.start();
         applySearchFilter();
-    }
-
-    function parseAPIResponse_add(responseText){
-        if (!responseText){
-            console.log("Network access error");
-            handleError(-1, "Network access error");
-            return;
-        }
-
-        if (responseText === VKAPI.TIME_OUT_RESPONSE){
-            console.log("Timeout waiting for server to reply");
-            handleError(-1, "Timeout waiting for server to reply");
-            return;
-        }
-
-        var json;
-        try {
-            json = JSON.parse(responseText);
-        } catch (err) {
-            console.log("Can not parse API response");
-            handleError(-1, "Can not parse API response");
-            return;
-        }
-
-        if (json.error) {//got error
-            console.log("Server reported error: " + json.error.error_msg);
-            handleError(json.error.error_code, "Server reported error: " + json.error.error_msg)
-            return;
-        }
-
-        var newAid = json.response;
-        if (!newAid){
-            console.log("Can not parse API response");
-            handleError(-1, "Can not parse API response");
-            return;
-        }
-
-        listModel.setProperty(index, "aid", newAid);
-        listModel.setProperty(index, "owner_id", userId);
-        //TODO add file rename
-    }
-
-    function parseAPIResponse_remove(responseText){
-        if (!responseText){
-            console.log("Network access error");
-            handleError(-1, "Network access error");
-            return;
-        }
-
-        if (responseText === VKAPI.TIME_OUT_RESPONSE){
-            console.log("Timeout waiting for server to reply");
-            handleError(-1, "Timeout waiting for server to reply");
-            return;
-        }
-
-        var json;
-        try {
-            json = JSON.parse(responseText);
-        } catch (err) {
-            console.log("Can not parse API response");
-            handleError(-1, "Can not parse API response");
-            return;
-        }
-
-        if (json.error) {//got error
-            console.log("Server reported error: " + json.error.error_msg);
-            handleError(json.error.error_code, "Server reported error: " + json.error.error_msg)
-            return;
-        }
-
-        var responseCode = json.response;
-        if (responseCode !== 1){
-            console.log("Can not parse API response");
-            handleError(-1, "Can not parse API response");
-            return;
-        }
-
-        listModel.remove(index);
     }
 
     function downloadPlayList(){
@@ -809,7 +781,7 @@ Page {
             for (var i = 0; i < listModel.count; i++){
                 if (!listModel.get(i).cached){
                     listView.currentIndex = i;
-                    listView.currentItem.playThisSong();
+                    listView.currentItem.loadThisSong();
                     controlsPanel.showFull();
                     break;
                 }
@@ -826,7 +798,7 @@ Page {
     }
 
     function parseAPIResponse_getCount(responseText){
-        searchInProgress = false;
+        _searchInProgress = false;
 
         if (!responseText){
             console.log("Network access error");
@@ -859,25 +831,25 @@ Page {
         console.log("total songs count = " + responseCode);
 
         createShuffleSequence(responseCode);
-        requestRandomSong();
+        requestMoreRandomSongs(_DEFAULT_RANDOM_SONGS_COUNT);
     }
 
     function createShuffleSequence(totalCount){
         console.log("createShuffleSequence: count = " + totalCount);
 
-        availableNumbers = [];
+        _availableNumbers = [];
 
         for (var i = 0; i < totalCount; i++){
-            availableNumbers[i] = i;
+            _availableNumbers[i] = i;
         }
     }
 
     function getRandomSongNumber(){
         console.log("getRandomSongNumber");
 
-        var randomIndex = Math.floor(Math.random() * availableNumbers.length);
-        var num = availableNumbers[randomIndex];
-        availableNumbers.splice(randomIndex, 1);
+        var randomIndex = Math.floor(Math.random() * _availableNumbers.length);
+        var num = _availableNumbers[randomIndex];
+        _availableNumbers.splice(randomIndex, 1);
 
         console.log("getRandomSongNumber: random song number = " + num);
 
@@ -887,13 +859,23 @@ Page {
     function requestRandomSong(){
         console.log("requestRandomSong");
 
-        if (searchInProgress || availableNumbers.length === 0){
+        if (_searchInProgress || _availableNumbers.length === 0){
             return;
         }
 
         var songNum = getRandomSongNumber();
-        searchInProgress = true;
+        _searchInProgress = true;
+        _needMoreRandomSongsCount--;
         VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, songNum, 1);
+    }
+
+    function requestMoreRandomSongs(count){
+        if (count < 1) {
+            return;
+        }
+        _needMoreRandomSongsCount = count;
+
+        requestRandomSong();
     }
 
 }

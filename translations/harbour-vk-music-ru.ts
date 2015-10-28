@@ -141,6 +141,10 @@
         <source>Shuffle</source>
         <translation>Shuffle</translation>
     </message>
+    <message>
+        <source>Please login</source>
+        <translation>Пожалуйста войдите</translation>
+    </message>
 </context>
 <context>
     <name>Notification</name>

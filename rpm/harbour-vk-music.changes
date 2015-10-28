@@ -8,7 +8,12 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
-* Thu Oct 26 2015 Alex <fake.ae@gmail.com> 0.9-1
+* Wed Oct 28 2015 Alex <fake.ae@gmail.com> 0.10-1
+- tweaks to Control Panel
+- you can scroll long title by dragging
+- shuffle will try to load 5 songs at once
+
+* Mon Oct 26 2015 Alex <fake.ae@gmail.com> 0.9-1
 - mark unsuccessful downloads
 - clear cache for single file
 - remorse remove
