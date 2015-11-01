@@ -15,6 +15,10 @@
         <source>Mail to</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Version</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>AlbumsPage</name>
@@ -177,10 +181,6 @@
     </message>
     <message>
         <source>Cache location</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Human friendly file names</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

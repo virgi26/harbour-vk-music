@@ -56,12 +56,6 @@ Page {
                 value: Math.floor(freeSpaceKBytes / 1024) + " MB"
             }
 
-//            DetailItem {
-//                id: minFreeSpace
-//                label: qsTr("Minimum free space")
-//                value: Math.floor(minimumFreeSpaceKBytes / 1024) + " MB"
-//            }
-
             BackgroundItem {
                 id: minFreeSpace
                 width: parent.width
@@ -210,20 +204,20 @@ Page {
                 }
             }
 
-            TextSwitch {
-                id: humanFriendlyFileNamesSwitch
+//            TextSwitch {
+//                id: humanFriendlyFileNamesSwitch
 
-                anchors.horizontalCenter: parent.horizontalCenter
+//                anchors.horizontalCenter: parent.horizontalCenter
 
-                text: qsTr("Human friendly file names")
-                checked: humanFriendlyFileNames
+//                text: qsTr("Human friendly file names")
+//                checked: humanFriendlyFileNames
 
-                onCheckedChanged: {
-                    humanFriendlyFileNames = checked;
-                }
+//                onCheckedChanged: {
+//                    humanFriendlyFileNames = checked;
+//                }
 
-                enabled: false;
-            }
+//                enabled: false;
+//            }
 
             TextSwitch {
                 id: enableBitRateSwitch

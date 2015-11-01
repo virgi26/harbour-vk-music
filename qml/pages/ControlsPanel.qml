@@ -444,6 +444,10 @@ DockedPanel {
         onProgress: {
             progressText.text = nPercentage + "%"
         }
+
+        onDownloadCanceled: {
+
+        }
     }
 
     Connections {
@@ -616,6 +620,10 @@ DockedPanel {
     }
 
     function stop(){
+        if (downloadManager.downloading){
+            downloadManager.abort();
+        }
+
         if (audioPlayer.playbackState === Audio.PlayingState){
             audioPlayer.stop();
         }

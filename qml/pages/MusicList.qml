@@ -278,7 +278,11 @@ Page {
 
                 onMovementEnded: {
                     if (!_searchInProgress && !_endOfAudioList && (contentHeight - contentY - height < 500*Theme.pixelRatio)){
-                        requestMoreSongs();
+                        if (AudioPlayerHelper.shuffle){//load only by button and last song
+//                            requestMoreRandomSongs(_DEFAULT_RANDOM_SONGS_COUNT);
+                        } else {
+                            requestMoreSongs();
+                        }
                     }
                 }
 

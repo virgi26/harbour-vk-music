@@ -15,6 +15,10 @@
         <source>Mail to</source>
         <translation>Почта</translation>
     </message>
+    <message>
+        <source>Version</source>
+        <translation>Версия</translation>
+    </message>
 </context>
 <context>
     <name>AlbumsPage</name>
@@ -178,10 +182,6 @@
     <message>
         <source>Cache location</source>
         <translation>Путь к кэш папке</translation>
-    </message>
-    <message>
-        <source>Human friendly file names</source>
-        <translation>Человеческие названия файлов</translation>
     </message>
     <message>
         <source>Local cache</source>

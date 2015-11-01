@@ -8,6 +8,9 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Sun Nov 01 2015 Alex <fake.ae@gmail.com> 0.11-1
+- few bugs fixed
+
 * Wed Oct 28 2015 Alex <fake.ae@gmail.com> 0.10-1
 - tweaks to Control Panel
 - you can scroll long title by dragging

@@ -84,8 +84,7 @@ void DownloadManager::download(QUrl url, QString fileName, QString localDirPath)
 
     _pCurrentReply = _pManager->head(_CurrentRequest);
     emit downloadStarted();
-    _downloading =true;
-    emit downloadingChanged();
+    setDownloading(true);
 
     _Timer.setInterval(5000);
     _Timer.setSingleShot(true);
@@ -116,6 +115,8 @@ void DownloadManager::pause()
     _pCurrentReply = 0;
     _nDownloadSizeAtPause = _nDownloadSize;
     _nDownloadSize = 0;
+
+    setDownloading(false);
 }
 
 void DownloadManager::abort() {
@@ -136,6 +137,10 @@ void DownloadManager::abort() {
     _pCurrentReply = 0;
     _nDownloadSizeAtPause = 0;
     _nDownloadSize = 0;
+
+    emit downloadCanceled();
+
+    setDownloading(false);
 }
 
 void DownloadManager::resume()
@@ -225,8 +230,7 @@ void DownloadManager::finished()
         emit downloadUnsuccessful();
     }
     _pFile = NULL;
-    _downloading = false;
-    emit downloadingChanged();
+    setDownloading(false);
 }
 
 
@@ -255,4 +259,13 @@ void DownloadManager::error(QNetworkReply::NetworkError code)
 void DownloadManager::timeout()
 {
     qDebug() << __FUNCTION__;
+}
+
+void DownloadManager::setDownloading(bool downloading){
+    if (downloading == _downloading){
+        return;
+    }
+
+    _downloading = downloading;
+    emit downloadingChanged();
 }

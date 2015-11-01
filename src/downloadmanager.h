@@ -38,7 +38,9 @@ class DownloadManager : public QObject
 public:
     explicit DownloadManager(QObject *parent = 0);
     virtual ~DownloadManager();
+
     Q_PROPERTY(bool downloading READ downloading NOTIFY downloadingChanged)
+
     bool downloading(){return _downloading;}
 
 signals:
@@ -48,6 +50,7 @@ signals:
     void downloadStarted();
     void downloadingChanged();
     void downloadUnsuccessful();
+    void downloadCanceled();
 
 public slots:
     void download(QUrl url, QString fileName, QString localDirPath);
@@ -64,6 +67,8 @@ private slots:
     void timeout();
 
 private:
+    void setDownloading(bool downloading);
+
     QUrl _URL;
     QString _path;
     QString _fileName;

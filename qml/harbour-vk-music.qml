@@ -40,6 +40,7 @@ ApplicationWindow
 
     readonly property int _DEFAULT_PAGE_SIZE: (Screen.sizeCategory >= Screen.Large) ? 100 : 50
     readonly property int _DEFAULT_RANDOM_SONGS_COUNT: 5
+    readonly property string _VERSION: "0.11"
 
     property alias controlsPanel: controlsPanel
 

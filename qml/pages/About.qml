@@ -49,6 +49,11 @@ Page {
             spacing: Theme.paddingMedium
 
             DetailItem {
+                label: qsTr("Version")
+                value: _VERSION
+            }
+
+            DetailItem {
                 label: qsTr("Author")
                 value: "Alexander Ladygin (virgi26)"
             }
