@@ -75,6 +75,7 @@ Page {
                 onStarted: {
                     console.log("show search");
                     controlsPanel.hidePanel();
+                    controlsPanel.showLyrics = false;
                     searchField.enabled = true;
                     searchField.visible = true;
                     searchField.color = Theme.primaryColor
@@ -252,44 +253,138 @@ Page {
             width: parent.width
 
             SilicaListView {
-                id: listView
+                    id: listView
 
-                anchors.fill: parent
-                anchors.bottomMargin: Theme.paddingLarge
+                    anchors.fill: parent
+                    anchors.bottomMargin: Theme.paddingLarge
 
-                delegate: SongItem {}
-                model: listModel
-                maximumFlickVelocity: 2500*Theme.pixelRatio
+                    delegate: SongItem {}
+                    model: listModel
+                    maximumFlickVelocity: 2500*Theme.pixelRatio
 
-                VerticalScrollDecorator {
-                }
+                    VerticalScrollDecorator {
+                    }
 
-                Transition {
-                    id: listViewDisplacedAnimation
-                    NumberAnimation { properties: "y"; duration: 250 }
-                }
+                    Transition {
+                        id: listViewDisplacedAnimation
+                        NumberAnimation { properties: "y"; duration: 250 }
+                    }
 
-                displaced: listViewDisplacedAnimation
+                    displaced: listViewDisplacedAnimation
 
-                onMovementStarted: {
-                    listView.forceActiveFocus();//hide keyboard
-                    controlsPanel.partiallyHide();
-                }
+                    onMovementStarted: {
+                        listView.forceActiveFocus();//hide keyboard
+                        controlsPanel.partiallyHide();
+                    }
 
-                onMovementEnded: {
-                    if (!_searchInProgress && !_endOfAudioList && (contentHeight - contentY - height < 500*Theme.pixelRatio)){
-                        if (AudioPlayerHelper.shuffle){//load only by button and last song
-//                            requestMoreRandomSongs(_DEFAULT_RANDOM_SONGS_COUNT);
-                        } else {
-                            requestMoreSongs();
+                    onMovementEnded: {
+                        if (!_searchInProgress && !_endOfAudioList && (contentHeight - contentY - height < 500*Theme.pixelRatio)){
+                            if (AudioPlayerHelper.shuffle){//load only by button and last song
+    //                            requestMoreRandomSongs(_DEFAULT_RANDOM_SONGS_COUNT);
+                            } else {
+                                requestMoreSongs();
+                            }
                         }
                     }
+
+                    footer: _showMoreButtonVisible
+                              ? showMoreButtonComponent
+                              : loadingIndicatorComponent
+
+                    Behavior on opacity {
+                        FadeAnimator {}
+                    }
+
+            }
+
+            Rectangle {
+                id: lyricsPopup
+
+                anchors.fill: parent
+
+                color: Theme.rgba(Theme.highlightBackgroundColor, Theme.highlightBackgroundOpacity)
+                border.color: Theme.highlightColor
+                border.width: 2*Theme.pixelRatio
+                radius: 5*Theme.pixelRatio
+
+                SilicaFlickable {
+                    id: lyricsArea
+
+                    anchors {
+                        fill: parent
+                        topMargin: Theme.paddingMedium
+                        bottomMargin: Theme.paddingMedium
+                    }
+
+                    contentHeight: lyricsText.implicitHeight
+                    flickableDirection: Flickable.VerticalFlick
+                    clip: true
+
+                    Text {
+                        id: lyricsText
+
+                        anchors {
+                            left: parent.left
+                            leftMargin: Theme.horizontalPageMargin
+                            right: parent.right
+                            rightMargin: Theme.horizontalPageMargin
+                        }
+
+                        color: Theme.primaryColor
+                        font.pixelSize: 0
+                        font.family: Theme.fontFamily
+                        clip: true;
+                        wrapMode: Text.WordWrap
+                    }
+
+//                    MouseArea {
+//                        id: magicArea
+
+//                        anchors.left: parent.left
+//                        anchors.right: parent.right
+//                        height: lyricsText.implicitHeight
+
+//                        propagateComposedEvents: true
+
+//                        onClicked: {
+//                            controlsPanel.showLyrics = false;
+//                        }
+//                    }
+
+                    VerticalScrollDecorator {
+                    }
+
                 }
 
-                footer: _showMoreButtonVisible
-                          ? showMoreButtonComponent
-                          : loadingIndicatorComponent
+                Behavior on opacity {
+                    FadeAnimator {}
+                }
 
+                BusyIndicator {
+                    id: lyricsBusyIndicator
+
+                    anchors.centerIn: parent
+
+                    running: false
+                    size: BusyIndicatorSize.Small
+                }
+
+                IconButton {
+                    anchors {
+                        top: parent.top
+                        right: parent.right
+                    }
+
+                    icon {
+                        source: "image://theme/icon-m-close"
+                        width: Theme.iconSizeSmall
+                        height: Theme.iconSizeSmall
+                    }
+
+                    onClicked: {
+                        controlsPanel.showLyrics = false;
+                    }
+                }
             }
         }
 
@@ -451,6 +546,12 @@ Page {
         value: downloadPlayListMode
     }
 
+    Binding {
+        target: lyricsPopup
+        property: "visible"
+        value: controlsPanel.showLyrics
+    }
+
     Connections {
         target: applicationWindow
 
@@ -466,7 +567,34 @@ Page {
             //reload list
             console.log("onCacheDirChanged: " + cacheDir);
             if (cacheDir){
-                reloadList();
+                wiseReload();
+            }
+        }
+    }
+
+    Connections {
+        target: controlsPanel
+
+        onShowLyricsChanged: {
+            if (controlsPanel.showLyrics){
+                listView.visible = false;
+                listView.opacity = 0;
+                lyricsPopup.visible = true;
+                lyricsPopup.opacity = 1;
+                getLyrics();
+            } else {
+                lyricsPopup.visible = false;
+                lyricsPopup.opacity = 0;
+                listView.visible = true;
+                listView.opacity = 1;
+            }
+        }
+
+        onSongChanged: {
+            lyricsText.text = "";
+
+            if (controlsPanel.showLyrics){
+                getLyrics();
             }
         }
     }
@@ -537,6 +665,7 @@ Page {
 
             wiseReload();
         }
+
     }
 
     Component.onCompleted: {
@@ -698,16 +827,12 @@ Page {
     function reloadList(){
         console.log("reloadList");
 
+        controlsPanel.showLyrics = false;
         _showMore = false;
         _showMoreButtonVisible = false;
-
-        if (!searchField.text){
-            applySearchFilter();
-            return;
-        }
-
         _searchInProgress = true;
         clearAudioListModel();
+
         VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, 0, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text), controlsPanel.albumId);
     }
 
@@ -736,13 +861,6 @@ Page {
         notificationLoader.source = "Notification.qml";
     }
 
-    function applySearchFilter(){
-        console.log("applySearchFilter");
-        _searchInProgress = true;
-        clearAudioListModel();
-        VKAPI.getAudioList(musicListPage, accessToken, userId, parseAPIResponse_getList, listModel.count, _DEFAULT_PAGE_SIZE, Utils.encodeURL(searchField.text), controlsPanel.albumId);
-    }
-
     function clearAudioListModel(){
         console.log("clearListModel");
         _endOfAudioList = false;
@@ -761,7 +879,7 @@ Page {
         clearSearchField();
         AudioPlayerHelper.overrideShuffle(false);
         hideSearch.start();
-        applySearchFilter();
+        reloadList();
     }
 
     function downloadPlayList(){
@@ -880,6 +998,54 @@ Page {
         _needMoreRandomSongsCount = count;
 
         requestRandomSong();
+    }
+
+    function getLyrics(){
+        console.log("getLyrics. id = " + controlsPanel.song.lyrics_id);
+
+        lyricsText.text = "";
+
+        if (!controlsPanel.song.lyrics_id){
+            controlsPanel.showLyrics = false;//just in case
+            return;
+        }
+
+        lyricsBusyIndicator.running = true;
+        VKAPI.getLyrics(musicListPage, accessToken, userId, parseAPIResponse_getLyrics, controlsPanel.song.lyrics_id);
+    }
+
+    function parseAPIResponse_getLyrics(responseText){
+        lyricsBusyIndicator.running = false;
+
+        if (!responseText){
+            console.log("Network access error");
+            handleError(-1, "Network access error");
+            return;
+        }
+
+        if (responseText === VKAPI.TIME_OUT_RESPONSE){
+            console.log("Timeout waiting for server to reply");
+            handleError(-1, "Timeout waiting for server to reply");
+            return;
+        }
+
+        var json;
+        try {
+            json = JSON.parse(responseText);
+        } catch (err) {
+            console.log("Can not parse API response");
+            handleError(-1, "Can not parse API response");
+            return;
+        }
+
+        if (json.error) {//got error
+            console.log("Server reported error: " + json.error.error_msg);
+            handleError(json.error.error_code, "Server reported error: " + json.error.error_msg)
+            return;
+        }
+
+        lyricsText.text = json.response.text;
+        console.log("lyrics = " + lyricsText.text);
     }
 
 }

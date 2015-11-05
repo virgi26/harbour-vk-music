@@ -164,3 +164,17 @@ function getCount(parent, accessToken, owner_id, parseAPIResponse_getCount){
     createAPIRequestWithTimeout(query, parseAPIResponse_getCount, parent);
 }
 
+function getLyrics(parent, accessToken, owner_id, parseAPIResponse_getLyrics, lyrics_id){
+    console.log("getAlbums started");
+
+    var query = API_SERVER_URL
+        + "/audio.getLyrics?"
+        + "v=" + API_VERSION
+        + "&access_token=" + accessToken
+        + "&lyrics_id=" + lyrics_id
+    ;
+
+    console.log("query = " + query);
+
+    createAPIRequestWithTimeout(query, parseAPIResponse_getLyrics, parent);
+}

@@ -47,6 +47,7 @@ DockedPanel {
     property string albumTitle
     property int albumId: -1// -1 - My music
                             // -2 - shuffle on
+    property bool showLyrics: false
 
     property alias audioPlayer: audioPlayer
     property alias nextButton: nextButton
@@ -55,6 +56,8 @@ DockedPanel {
 
     property bool _partiallyHidden: true
     property bool _autoPlayAfterDownload: true
+
+    signal showLyrics()
 
     height: column.height
 //    width: parent.width
@@ -91,7 +94,7 @@ DockedPanel {
                 left: parent.left
                 right: parent.right
                 leftMargin: Theme.horizontalPageMargin
-                rightMargin: Theme.horizontalPageMargin
+                rightMargin: Theme.horizontalPageMargin + (downloadIndicatorItem.visible ? downloadIndicatorItem.width : 0)
                 topMargin: Theme.paddingSmall
             }
 
@@ -108,7 +111,7 @@ DockedPanel {
             visible: !_partiallyHidden
             font.pixelSize: Theme.fontSizeMedium
             color: Theme.highlightColor
-            horizontalAlignment: Text.AlignHCenter
+            horizontalAlignment: Text.AlignLeft
 
             onTextChanged: {
                 if (controlsPanel.open && !controlsPanel._partiallyHidden){
@@ -262,11 +265,29 @@ DockedPanel {
         }
     }
 
+    IconButton {
+        id: lyricsButton
+
+        anchors {
+            horizontalCenter: downloadIndicatorItem.horizontalCenter
+            top: column.top
+            topMargin: buttons.y + Math.abs(lyricsButton.height - buttons.height)/2
+        }
+
+        icon.source: "image://theme/icon-s-clipboard?" + (pressed || showLyrics ? Theme.highlightColor : Theme.primaryColor)
+        visible: song.lyrics_id
+        onClicked: {
+            showLyrics = !showLyrics
+        }
+    }
+
     Item{
+        id: downloadIndicatorItem
+
         anchors {
             right: column.right
             top: column.top
-            topMargin: buttons.y + Math.abs(downloadIndicator.height - buttons.height)/2
+            topMargin: Math.abs(downloadIndicator.height - buttons.height)/2
             rightMargin: Theme.paddingSmall
         }
 

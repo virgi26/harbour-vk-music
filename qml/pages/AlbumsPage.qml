@@ -147,6 +147,7 @@ Page {
 
         if (page.status === PageStatus.Active) {
             controlsPanel.hidePanel();
+            controlsPanel.showLyrics = false;
         }
 
     }

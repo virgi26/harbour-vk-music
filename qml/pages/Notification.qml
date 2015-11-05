@@ -52,8 +52,8 @@ Item {
 //                           : "transparent"
             color: Theme.rgba(Theme.highlightBackgroundColor, Theme.highlightBackgroundOpacity)
             border.color: Theme.highlightColor
-            border.width: 2
-            radius: 10
+            border.width: 2*Theme.pixelRatio
+            radius: 10*Theme.pixelRatio
 
             SequentialAnimation on border.color {
                     ColorAnimation { to: "red"; duration: 200 }
