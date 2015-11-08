@@ -10,4 +10,5 @@ Name=VK.Music
 # Remember to comment out the following line, if you do not want to use
 # a different app name in German locale (de).
 Name[ru]=ВК.Музыка
+Name[de]=VK.Musik
 Categories=Audio;Music
