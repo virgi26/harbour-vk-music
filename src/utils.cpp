@@ -308,12 +308,9 @@ QString Utils::getFilePath(QString dirPath, QString fileName){
 }
 
 Utils::Utils(QObject *parent) :
-    QObject(parent){
-//    mceReqInterface("com.nokia.mce",
-//                    "/com/nokia/mce/request",
-//                    "com.nokia.mce.request",
-//                    QDBusConnection::connectToBus(QDBusConnection::SystemBus, "system")) {
-//    pauseRefresher = new QTimer();
-//    connect(pauseRefresher, SIGNAL(timeout()), this, SLOT(refreshPause()));
+    QObject(parent)
+{
 }
-Utils::~Utils() { }
+
+Utils::~Utils() {
+}

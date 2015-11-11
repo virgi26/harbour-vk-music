@@ -226,8 +226,6 @@ DockedPanel {
             rightMargin: Theme.horizontalPageMargin
             implicitHeight: valueText !== "" ? Theme.itemSizeLarge : label !== "" ? Theme.itemSizeMedium : Theme.itemSizeSmall
 
-            visible: open && (song.aid > 0)
-
             minimumValue: 0
             maximumValue: song.duration ? song.duration : 0
             value: 0
@@ -246,6 +244,7 @@ DockedPanel {
                             || audioPlayer.status === Audio.Buffered)
                         && !_partiallyHidden
                         && !song.error
+            visible: open// && (song.aid > 0)
 
             label: _partiallyHidden
                    ? (song.artist
@@ -275,7 +274,7 @@ DockedPanel {
         }
 
         icon.source: "image://theme/icon-s-clipboard?" + (pressed || showLyrics ? Theme.highlightColor : Theme.primaryColor)
-        visible: song.lyrics_id
+        visible: song.lyrics_id > 0
         onClicked: {
             showLyrics = !showLyrics
         }
@@ -385,6 +384,7 @@ DockedPanel {
         onPlaying: {
             userInteraction = false;
             AudioPlayerHelper.status = AudioPlayerHelper.Playing;
+            console.log("playing song: " + titleLabel.text);
         }
 
         onPaused: {

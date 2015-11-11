@@ -337,20 +337,6 @@ Page {
                         wrapMode: Text.WordWrap
                     }
 
-//                    MouseArea {
-//                        id: magicArea
-
-//                        anchors.left: parent.left
-//                        anchors.right: parent.right
-//                        height: lyricsText.implicitHeight
-
-//                        propagateComposedEvents: true
-
-//                        onClicked: {
-//                            controlsPanel.showLyrics = false;
-//                        }
-//                    }
-
                     VerticalScrollDecorator {
                     }
 
@@ -753,12 +739,17 @@ Page {
 
             if (listModel.count === 0) {
                 _justLoaded = true;
+                _listChanged = true;
             }
 
             for (var i in items) {
                 if (!_showMore && items[i].owner_id !== userId){
-                    _showMoreButtonVisible = true;
-                    break;
+                    if (count === 0){//if first song idoes not belong to user, then just show everything
+                        _showMore = true;
+                    } else {
+                        _showMoreButtonVisible = true;
+                        break;
+                    }
                 }
 
                 var song = {
@@ -779,10 +770,11 @@ Page {
                 song.cached = filePath ? true : false;
 
                 listModel.append(song);
+                count++;
                 _listChanged = true;
             }
-            console.log("added " + items.length + " songs to playlist");
-            if (items.length < _DEFAULT_PAGE_SIZE && _showMore){
+            console.log("added " + count + " songs to playlist");
+            if (count < _DEFAULT_PAGE_SIZE && _showMore){
                 console.log("reached end of the list");
                 _endOfAudioList = true;
             }
@@ -810,7 +802,7 @@ Page {
 
             if (!controlsPanel.song && listModel.count > 0){
                 listView.currentIndex = 0;
-                listView.currentItem.loadThisSong(false);
+                listView.currentItem.loadThisSong(false);//autoload first song
             }
             if (!controlsPanel.open){
                 controlsPanel.showFull();

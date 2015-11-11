@@ -28,34 +28,56 @@
 #include <QStandardPaths>
 
 
+
 DownloadManager::DownloadManager(QObject *parent) :
     QObject(parent)
     , _pManager(NULL)
-    , _pCurrentReply(NULL)
+    , _pReply(NULL)
     , _pFile(NULL)
+    , _configManager()
     , _nDownloadTotal(0)
     , _bAcceptRanges(false)
     , _nDownloadSize(0)
     , _nDownloadSizeAtPause(0)
     , _downloading(false)
 {
+    _pManager = new QNetworkAccessManager(this);
+    connect(&_configManager, SIGNAL(updateCompleted()), this, SLOT(configurationUpdated()));
 }
-
 
 DownloadManager::~DownloadManager()
 {
-    if (_pCurrentReply != NULL)
+    if (_pReply != NULL)
     {
-        pause();
+        abort();
     }
 }
 
+void DownloadManager::networkAccessibleChanged(QNetworkAccessManager::NetworkAccessibility accessible){
+    if (accessible != QNetworkAccessManager::Accessible){
+        _configManager.updateConfigurations();
+    }
+}
+
+void DownloadManager::configurationUpdated(){
+    qDebug() << "configurationUpdated";
+    QList<QNetworkConfiguration> activeConfigs = _configManager.allConfigurations(QNetworkConfiguration::Active);
+
+    if (activeConfigs.count() > 0) {
+        _pManager->setConfiguration(activeConfigs.at(0));
+        qDebug() << "QNetworkConfiguration = " << activeConfigs.at(0).name();
+
+        _pManager = new QNetworkAccessManager(this);
+        _pManager->clearAccessCache();
+    }
+
+}
 
 void DownloadManager::download(QUrl url, QString fileName, QString localDirPath)
 {
     qDebug() << "download: URL = " <<url.toString();
 
-    if (_pCurrentReply != NULL)
+    if (_pReply != NULL)
     {
         abort();
     }
@@ -79,10 +101,10 @@ void DownloadManager::download(QUrl url, QString fileName, QString localDirPath)
     _nDownloadSize = 0;
     _nDownloadSizeAtPause = 0;
 
-    _pManager = new QNetworkAccessManager(this);
-    _CurrentRequest = QNetworkRequest(url);
+//    _pManager = new QNetworkAccessManager(this);
+    _request = QNetworkRequest(url);
 
-    _pCurrentReply = _pManager->head(_CurrentRequest);
+    _pReply = _pManager->head(_request);
     emit downloadStarted();
     setDownloading(true);
 
@@ -91,28 +113,28 @@ void DownloadManager::download(QUrl url, QString fileName, QString localDirPath)
     connect(&_Timer, SIGNAL(timeout()), this, SLOT(timeout()));
     _Timer.start();
 
-    connect(_pCurrentReply, SIGNAL(finished()), this, SLOT(finishedHead()));
-    connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(error(QNetworkReply::NetworkError)));
+    connect(_pReply, SIGNAL(finished()), this, SLOT(finishedHead()));
+    connect(_pReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(error(QNetworkReply::NetworkError)));
 }
 
 
 void DownloadManager::pause()
 {
     qDebug() << "pause() = " << _nDownloadSize;
-    if (_pCurrentReply == NULL)
+    if (_pReply == NULL)
     {
         return;
     }
     _Timer.stop();
     disconnect(&_Timer, SIGNAL(timeout()), this, SLOT(timeout()));
-    disconnect(_pCurrentReply, SIGNAL(finished()), this, SLOT(finished()));
-    disconnect(_pCurrentReply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(downloadProgress(qint64,qint64)));
-    disconnect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(error(QNetworkReply::NetworkError)));
+    disconnect(_pReply, SIGNAL(finished()), this, SLOT(finished()));
+    disconnect(_pReply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(downloadProgress(qint64,qint64)));
+    disconnect(_pReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(error(QNetworkReply::NetworkError)));
 
-    _pCurrentReply->abort();
+    _pReply->abort();
 //    _pFile->write( _pCurrentReply->readAll());
     _pFile->flush();
-    _pCurrentReply = 0;
+    _pReply = 0;
     _nDownloadSizeAtPause = _nDownloadSize;
     _nDownloadSize = 0;
 
@@ -121,20 +143,20 @@ void DownloadManager::pause()
 
 void DownloadManager::abort() {
     qDebug() << "abort()";
-    if (_pCurrentReply == NULL)
+    if (_pReply == NULL)
     {
         return;
     }
     _Timer.stop();
     disconnect(&_Timer, SIGNAL(timeout()), this, SLOT(timeout()));
-    disconnect(_pCurrentReply, SIGNAL(finished()), this, SLOT(finished()));
-    disconnect(_pCurrentReply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(downloadProgress(qint64,qint64)));
-    disconnect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(error(QNetworkReply::NetworkError)));
+    disconnect(_pReply, SIGNAL(finished()), this, SLOT(finished()));
+    disconnect(_pReply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(downloadProgress(qint64,qint64)));
+    disconnect(_pReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(error(QNetworkReply::NetworkError)));
 
-    _pCurrentReply->abort();
+    _pReply->abort();
     _pFile->flush();
     _pFile->remove();
-    _pCurrentReply = 0;
+    _pReply = 0;
     _nDownloadSizeAtPause = 0;
     _nDownloadSize = 0;
 
@@ -162,19 +184,19 @@ void DownloadManager::download()
         {
             rangeHeaderValue += QByteArray::number(_nDownloadTotal);
         }
-        _CurrentRequest.setRawHeader("Range", rangeHeaderValue);
+        _request.setRawHeader("Range", rangeHeaderValue);
     }
 
-    _pCurrentReply = _pManager->get(_CurrentRequest);
+    _pReply = _pManager->get(_request);
 
     _Timer.setInterval(5000);
     _Timer.setSingleShot(true);
     connect(&_Timer, SIGNAL(timeout()), this, SLOT(timeout()));
     _Timer.start();
 
-    connect(_pCurrentReply, SIGNAL(finished()), this, SLOT(finished()));
-    connect(_pCurrentReply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(downloadProgress(qint64,qint64)));
-    connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(error(QNetworkReply::NetworkError)));
+    connect(_pReply, SIGNAL(finished()), this, SLOT(finished()));
+    connect(_pReply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(downloadProgress(qint64,qint64)));
+    connect(_pReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(error(QNetworkReply::NetworkError)));
 }
 
 
@@ -183,26 +205,27 @@ void DownloadManager::finishedHead()
     _Timer.stop();
     _bAcceptRanges = false;
 
-    QList<QByteArray> list = _pCurrentReply->rawHeaderList();
+    QList<QByteArray> list = _pReply->rawHeaderList();
     foreach (QByteArray header, list)
     {
-        QString qsLine = QString(header) + " = " + _pCurrentReply->rawHeader(header);
+        QString qsLine = QString(header) + " = " + _pReply->rawHeader(header);
 //        emit addLine(qsLine);
     }
 
-    if (_pCurrentReply->hasRawHeader("Accept-Ranges"))
+    if (_pReply->hasRawHeader("Accept-Ranges"))
     {
-        QString qstrAcceptRanges = _pCurrentReply->rawHeader("Accept-Ranges");
+        QString qstrAcceptRanges = _pReply->rawHeader("Accept-Ranges");
         _bAcceptRanges = (qstrAcceptRanges.compare("bytes", Qt::CaseInsensitive) == 0);
         qDebug() << "Accept-Ranges = " << qstrAcceptRanges << _bAcceptRanges;
     }
 
-    _nDownloadTotal = _pCurrentReply->header(QNetworkRequest::ContentLengthHeader).toInt();
+    _nDownloadTotal = _pReply->header(QNetworkRequest::ContentLengthHeader).toInt();
 
 //    _CurrentRequest = QNetworkRequest(url);
-    _CurrentRequest.setRawHeader("Connection", "Keep-Alive");
-    _CurrentRequest.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
-    _pFile = new QFile(_qsFileAbsPath + ".part");
+    _request.setRawHeader("Connection", "Keep-Alive");
+    _request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
+//    _pFile = new QFile(_qsFileAbsPath + ".part");
+    _pFile = new QFile(_qsFileAbsPath);
     if (!_bAcceptRanges)
     {
         _pFile->remove();
@@ -220,14 +243,14 @@ void DownloadManager::finished()
 
     _Timer.stop();
     _pFile->close();
-    QFile::remove(_qsFileAbsPath);
-    QFile::rename(_qsFileAbsPath + ".part", _qsFileAbsPath);
-    _pCurrentReply = 0;
+//    QFile::remove(_qsFileAbsPath);
+//    QFile::rename(_qsFileAbsPath + ".part", _qsFileAbsPath);
+    _pReply = 0;
     if (QFile(_qsFileAbsPath).size() > 1000){
         emit downloadComplete(_qsFileAbsPath);
     } else {
         QFile::remove(_qsFileAbsPath);
-        emit downloadUnsuccessful();
+        error(QNetworkReply::NetworkError(0));
     }
     _pFile = NULL;
     setDownloading(false);
@@ -240,7 +263,7 @@ void DownloadManager::downloadProgress(qint64 bytesReceived, qint64 bytesTotal)
     _nDownloadSize = _nDownloadSizeAtPause + bytesReceived;
     qDebug() << "Download Progress: Received=" << _nDownloadSize <<": Total=" << _nDownloadSizeAtPause + bytesTotal;
 
-    _pFile->write(_pCurrentReply->readAll());
+    _pFile->write(_pReply->readAll());
     int nPercentage = static_cast<int>((static_cast<float>(_nDownloadSizeAtPause + bytesReceived) * 100.0) / static_cast<float>(_nDownloadSizeAtPause + bytesTotal));
     qDebug() << nPercentage;
     emit progress(nPercentage);
@@ -252,7 +275,9 @@ void DownloadManager::downloadProgress(qint64 bytesReceived, qint64 bytesTotal)
 void DownloadManager::error(QNetworkReply::NetworkError code)
 {
     qDebug() << __FUNCTION__ << "(" << code << ")";
+    qDebug() << "configuration = " << _pManager->configuration().name();
     emit downloadUnsuccessful();
+    _configManager.updateConfigurations();
 }
 
 

@@ -61,3 +61,4 @@ HEADERS += \
     src/downloadmanager.h \
     src/audioplayerhelper.h \
 
+SAILFISHAPP_ICONS = 108x108 128x128 256x256 86x86

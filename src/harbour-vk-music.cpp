@@ -19,14 +19,17 @@
   along with Harbour-vk-music.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-//#ifdef QT_QML_DEBUG
+#ifdef QT_QML_DEBUG
 #include <QtQuick>
-//#endif
+#endif
 
 #include <sailfishapp.h>
 #include "utils.h"
 #include "downloadmanager.h"
 #include "audioplayerhelper.h"
+#include <QtSql/QSqlDatabase>
+
+static QFile logFile;
 
 static QObject *audioplayerhelper_provider(QQmlEngine *engine, QJSEngine *scriptEngine)
 {
@@ -35,6 +38,48 @@ static QObject *audioplayerhelper_provider(QQmlEngine *engine, QJSEngine *script
 
     AudioPlayerHelper *audioplayerhelper = new AudioPlayerHelper();
     return audioplayerhelper;
+}
+
+void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+
+    QByteArray localMsg = msg.toUtf8();
+
+    QString stringType;
+    switch (type) {
+    case QtDebugMsg:
+        stringType = "D";
+        break;
+    case QtWarningMsg:
+        stringType = "W";
+        break;
+    case QtCriticalMsg:
+        stringType = "C";
+        break;
+    case QtFatalMsg:
+        stringType = "Fatal";
+        break;
+    default:
+        stringType = "Unknown";
+    }
+
+    QString logString = QString("[%1] %2:%3 - %4\n")
+            .arg(stringType)
+            .arg(context.function)
+            .arg(context.line)
+            .arg(localMsg.constData());
+
+//    if (!logFile.isOpen()) {
+//        logFile.open(QIODevice::Append | QIODevice::Text | QIODevice::WriteOnly);
+//    }
+//    QTextStream stream(&logFile);
+//    stream << logString;
+
+    QTextStream stderrStream(stderr, QIODevice::WriteOnly);
+    stderrStream<<logString;
+
+    if (type == QtFatalMsg) {
+        abort();
+    }
 }
 
 int main(int argc, char *argv[])
@@ -52,8 +97,17 @@ int main(int argc, char *argv[])
     Utils *utils = new Utils();
     view->rootContext()->setContextProperty("Utils", utils);
 
+    logFile.setFileName(utils->getDefaultCacheDirPath() + "/trace.log");
+
+    qInstallMessageHandler(myMessageOutput);
+
     view->setSource(SailfishApp::pathTo("qml/harbour-vk-music.qml"));
     view->show();
+
+    //find db file
+//    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+
+//    return 0;
     return app->exec();
 }
 

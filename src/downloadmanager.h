@@ -29,6 +29,7 @@
 #include <QFile>
 #include <QTimer>
 #include <QStandardPaths>
+#include <QNetworkConfigurationManager>
 
 
 class DownloadManager : public QObject
@@ -65,6 +66,8 @@ private slots:
     void downloadProgress(qint64 bytesReceived, qint64 bytesTotal);
     void error(QNetworkReply::NetworkError code);
     void timeout();
+    void networkAccessibleChanged(QNetworkAccessManager::NetworkAccessibility accessible);
+    void configurationUpdated();
 
 private:
     void setDownloading(bool downloading);
@@ -74,9 +77,10 @@ private:
     QString _fileName;
     QString _qsFileAbsPath;
     QNetworkAccessManager* _pManager;
-    QNetworkRequest _CurrentRequest;
-    QNetworkReply* _pCurrentReply;
+    QNetworkRequest _request;
+    QNetworkReply* _pReply;
     QFile* _pFile;
+    QNetworkConfigurationManager _configManager;
     int _nDownloadTotal;
     bool _bAcceptRanges;
     int _nDownloadSize;
