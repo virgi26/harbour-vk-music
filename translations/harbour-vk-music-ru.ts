@@ -95,7 +95,7 @@
     <name>MusicList</name>
     <message>
         <source>My music</source>
-        <translation>Моя музыку</translation>
+        <translation>Моя музыка</translation>
     </message>
     <message>
         <source>Search</source>
